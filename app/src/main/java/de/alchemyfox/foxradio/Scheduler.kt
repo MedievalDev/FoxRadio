@@ -17,10 +17,14 @@ import java.util.Locale
 /**
  * Sendeschema. Die Sendezeiten kommen aus der geladenen Playlist (der PC legt
  * sie fest, z. B. 07:00, 07:30, 08:00, 08:30, 08:55 ...). Ohne Playlist gilt
- * der alte Standard: volle Stunden 07:00 bis 16:00.
+ * der Standardplan, der zu pc/writer.py "slots" passt.
  */
 object Schedule {
-    val DEFAULT_TIMES: List<LocalTime> = (7..16).map { LocalTime.of(it, 0) }
+    /** Fallback vor dem ersten Sync. Gleiche Zeiten wie pc/writer.py "slots". */
+    val DEFAULT_TIMES: List<LocalTime> = listOf(
+        "07:00", "07:30", "08:00", "08:30", "08:55", "09:30",
+        "10:00", "11:00", "11:55", "13:00", "14:00", "15:00"
+    ).map { LocalTime.parse(it) }
 
     val FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE dd.MM. HH:mm", Locale.GERMAN)
 
