@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchSchedule: MaterialSwitch
     private lateinit var switchWeekdays: MaterialSwitch
     private lateinit var switchOnlyMusic: MaterialSwitch
+    private lateinit var switchLiveWeather: MaterialSwitch
     private lateinit var dotExact: View
     private lateinit var dotBattery: View
     private lateinit var dotNotify: View
@@ -67,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         switchSchedule = findViewById(R.id.switchSchedule)
         switchWeekdays = findViewById(R.id.switchWeekdays)
         switchOnlyMusic = findViewById(R.id.switchOnlyMusic)
+        switchLiveWeather = findViewById(R.id.switchLiveWeather)
         dotExact = findViewById(R.id.dotExact)
         dotBattery = findViewById(R.id.dotBattery)
         dotNotify = findViewById(R.id.dotNotify)
@@ -118,6 +120,12 @@ class MainActivity : AppCompatActivity() {
         switchOnlyMusic.setOnCheckedChangeListener { _, checked ->
             prefs.onlyWhenMusic = checked
             prefs.appendLog(if (checked) "Blöcke nur bei laufender Musik" else "Blöcke auch ohne Musik")
+        }
+
+        switchLiveWeather.isChecked = prefs.liveWeather
+        switchLiveWeather.setOnCheckedChangeListener { _, checked ->
+            prefs.liveWeather = checked
+            prefs.appendLog(if (checked) "Live-Wetter vor jedem Block an" else "Live-Wetter aus")
         }
 
         findViewById<View>(R.id.btnArticles).setOnClickListener {

@@ -68,8 +68,8 @@ Der Strato-VPS wird für dieses Projekt nicht gebraucht.
 ## 3. Sendeschema
 
 ```
-05:00  PC startet, Produktion läuft
-06:30  Upload fertig, PC fährt runter
+01:00  PC startet, Produktion läuft (Marco ist um vier oft schon wach)
+02:30  Upload fertig, PC fährt runter
 07:00  MORNING SHOW (10-15 Min, zwei Stimmen)
 08:00  Block
 09:00  Block
@@ -155,7 +155,7 @@ gerendert und danach zusammengeschnitten. Eine Morning Show sind 30–50
 Wortwechsel, die Stundenblöcke je 8–15. Macht **150–300 Einzeldateien pro
 Nacht**. GPU ist eine RTX 5070 Ti — ein 1,7B-Modell passt dort mühelos rein,
 VRAM ist kein Thema. Offen ist allein der Durchsatz: 150–300 Clips müssen
-zwischen 05:00 und 06:30 fertig sein. Wird in Phase 2 gemessen, danach steht
+zwischen 01:00 und 02:30 fertig sein. Wird in Phase 2 gemessen, danach steht
 fest ob 1.7B geht oder 0.6B reicht.
 
 ---
@@ -180,7 +180,7 @@ Phase 4.
 **Indie-RPG:** Quellen offen (itch.io, Steam-Neuheiten, Kickstarter, RSS von
 Indie-Magazinen). Auswahl in Phase 4.
 
-**Wetter:** Ein Problem, das im Konzept steckt — alles ist um 05:00 gerendert.
+**Wetter:** Ein Problem, das im Konzept steckt — alles ist um 01:00 gerendert.
 Die 15:00-Wetteransage ist damit eine zehn Stunden alte Vorhersage. Falls das
 stört, müsste das Handy Wetter live ziehen und mit einer schnellen
 On-Device-Stimme sprechen. Anderer Aufwand, andere Stimme, klingt anders als
@@ -196,7 +196,8 @@ der Rest. Offene Entscheidung. Die Uhrzeit spricht die App schon jetzt live
 - [x] Feste Uhrzeiten oder Intervalle ab Arbeitsbeginn? → feste Uhrzeiten
 - [x] Unterbrechung: Pause oder Ducking? → beides, in der App umschaltbar
 - [x] Testgerät: Xiaomi Mi 10T Lite 5G (Android-Version ungeprüft, vermutlich 12)
-- [ ] Wetter: mitgerendert (veraltet) oder live auf dem Handy (Extraaufwand)?
+- [x] Wetter: live auf dem Handy per Android-Sprachausgabe vor jedem Block (2026-09-05),
+      kein Wetter mehr in den Skripten
 - [x] Welche Gaming-, Entwickler- und Indie-RPG-Feeds? → `pc/feeds.json`, geprüft
       2026-09-05, Nachjustieren nach ein paar Tagen Hören
 - [x] Die zwei Stimmen definieren und gegeneinander testen → A sachlicher Mann, B

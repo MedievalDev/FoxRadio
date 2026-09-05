@@ -71,7 +71,7 @@ set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
 | `webspace/` | `.htaccess`-Vorlage und htpasswd-Helfer für den geschützten Ordner |
 
 Die `*.example.json` als `*.json` kopieren und ausfüllen. `night.bat` in die
-Windows-Aufgabenplanung um 05:00 eintragen, mit "Computer aufwecken".
+Windows-Aufgabenplanung um 01:00 eintragen, mit "Computer aufwecken".
 
 Dateiformat auf dem Webspace (Ordner mit .htaccess):
 

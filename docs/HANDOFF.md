@@ -105,16 +105,16 @@ Protokoll in der App zeigt, was der Wecker gemacht hat.
 
 ## 7. Automatik — offen
 
-- `pc\night.bat` in der Windows-Aufgabenplanung: täglich 05:00, "Computer
+- `pc\night.bat` in der Windows-Aufgabenplanung: täglich 01:00 (Marco ist um vier oft schon am PC), "Computer
   aufwecken, um diese Aufgabe auszuführen" an, "Nur ausführen, wenn Benutzer
   angemeldet" beachten. ComfyUI wird nicht mehr gebraucht, nur die GPU.
-- Wake-on-RTC im BIOS oder SwitchBot, damit der PC um 05:00 überhaupt an ist.
+- Wake-on-RTC im BIOS oder SwitchBot, damit der PC um 01:00 überhaupt an ist.
 - In `night.json` `"shutdown": true`, wenn der Lauf sauber durchläuft.
 - Optional `"ntfy_topic"` setzen und die ntfy-App am Handy abonnieren.
 
 ## Offen und Annahmen
 
-- Wetter kommt aus dem Nachtlauf, also von 05:00. Live-Wetter am Handy
+- Wetter kommt aus dem Nachtlauf, also von 01:00. Live-Wetter am Handy
   bleibt Option.
 - Sendetage Mo bis Fr, in der App umschaltbar. Der Nachtlauf läuft jeden
   Tag, an dem die Aufgabe feuert.

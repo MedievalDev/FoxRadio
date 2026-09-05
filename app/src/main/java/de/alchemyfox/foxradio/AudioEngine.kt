@@ -47,7 +47,9 @@ class AudioEngine(private val context: Context) {
 
         prefs.appendLog("Block startet ($source, ${mode.name}, Musik ${if (musicWasPlaying) "läuft" else "aus"}, Vol $originalVol/$maxVol)")
 
-        val tts = if (file == null) TtsSpeaker(context, attrs) else null
+        // Wetter holen, solange die Musik noch laeuft - das Netz darf die Pause nicht verlaengern.
+        val weather = if (file != null && prefs.liveWeather) Weather.spoken(context) { prefs.appendLog(it) } else null
+        val tts = if (file == null || weather != null) TtsSpeaker(context, attrs) else null
         var volumeTouched = false
         var focus: AudioFocusRequest? = null
         try {
@@ -69,6 +71,10 @@ class AudioEngine(private val context: Context) {
             }
 
             if (file != null) {
+                if (weather != null) {
+                    tts?.speak(weather) { prefs.appendLog(it) }
+                    delay(250)
+                }
                 playFile(file)
             } else {
                 playChime()

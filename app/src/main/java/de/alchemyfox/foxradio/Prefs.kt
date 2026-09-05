@@ -30,6 +30,19 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_ONLY_MUSIC, true)
         set(value) = sp.edit().putBoolean(KEY_ONLY_MUSIC, value).apply()
 
+    /** Vor jedem echten Block das aktuelle Wetter per Android-Sprachausgabe ansagen. */
+    var liveWeather: Boolean
+        get() = sp.getBoolean(KEY_LIVE_WEATHER, true)
+        set(value) = sp.edit().putBoolean(KEY_LIVE_WEATHER, value).apply()
+
+    var weatherCache: String
+        get() = sp.getString(KEY_WEATHER_CACHE, "") ?: ""
+        set(value) = sp.edit().putString(KEY_WEATHER_CACHE, value).apply()
+
+    var weatherCacheAt: Long
+        get() = sp.getLong(KEY_WEATHER_CACHE_AT, 0L)
+        set(value) = sp.edit().putLong(KEY_WEATHER_CACHE_AT, value).apply()
+
     var baseUrl: String
         get() = sp.getString(KEY_URL, "") ?: ""
         set(value) = sp.edit().putString(KEY_URL, value.trim().trimEnd('/')).apply()
@@ -62,6 +75,9 @@ class Prefs(context: Context) {
         private const val KEY_SCHEDULE = "schedule_enabled"
         private const val KEY_WEEKDAYS = "weekdays_only"
         private const val KEY_ONLY_MUSIC = "only_when_music"
+        private const val KEY_LIVE_WEATHER = "live_weather"
+        private const val KEY_WEATHER_CACHE = "weather_cache"
+        private const val KEY_WEATHER_CACHE_AT = "weather_cache_at"
         private const val KEY_URL = "base_url"
         private const val KEY_USER = "auth_user"
         private const val KEY_PASS = "auth_pass"

@@ -129,12 +129,9 @@ def build_prompt(cfg, block, weather, day):
     lo, hi = cfg["morning_lines"] if block["kind"] == "morning" else (
         cfg["closing_lines"] if block["kind"] == "closing" else cfg["hour_lines"])
     hour = int(block["slot"][:2])
-    w = ""
-    if weather:
-        h = (weather.get("hourly") or {}).get(block["slot"])
-        jetzt = f", gerade {h['temp']} Grad und {h['text']}" if h else ""
-        w = (f"Wetter {weather['place']}: {weather['text']}, {weather['tmin']} bis {weather['tmax']} Grad, "
-             f"Regenwahrscheinlichkeit {weather['rain_prob']} Prozent{jetzt}.")
+    # Kein Wetter im Skript: die Bloecke entstehen nachts, das Handy sagt das
+    # aktuelle Wetter vor jedem Block selbst an (Weather.kt in der App).
+    w = "Das Wetter sagt das Handy vorher selbst an, also kein Wetter im Skript."
     news = "\n".join(
         f"- [{it['id']}] ({it['rubric']}, {it['source']}) {it['title']}\n  {it.get('summary') or ''}".rstrip()
         for it in block["items"]
@@ -142,23 +139,21 @@ def build_prompt(cfg, block, weather, day):
 
     if block["kind"] == "morning":
         struktur = ("1. Begrüßung, Datum, Uhrzeit, kurz was heute ansteht (2 bis 4 Zeilen)\n"
-                    "2. Wetter (2 Zeilen)\n"
-                    "3. Gaming-News, die größte Meldung ausführlicher (je Meldung 3 bis 5 Zeilen)\n"
-                    "4. Entwickler- und KI-Themen (je 2 bis 4 Zeilen)\n"
-                    "5. Anthropic-Neuigkeiten, falls vorhanden (je 2 bis 3 Zeilen)\n"
-                    "6. Indie-RPG-Vorstellung (je 3 bis 4 Zeilen)\n"
-                    "7. Verabschiedung, Hinweis auf den nächsten Block um acht (1 bis 2 Zeilen)")
+                    "2. Gaming-News, die größte Meldung ausführlicher (je Meldung 3 bis 5 Zeilen)\n"
+                    "3. Entwickler- und KI-Themen (je 2 bis 4 Zeilen)\n"
+                    "4. Anthropic-Neuigkeiten, falls vorhanden (je 2 bis 3 Zeilen)\n"
+                    "5. Indie-RPG-Vorstellung (je 3 bis 4 Zeilen)\n"
+                    "6. Verabschiedung, Hinweis auf den nächsten Block um acht (1 bis 2 Zeilen)")
     elif block["kind"] == "closing":
         struktur = ("1. Uhrzeit, kurzer Tagesabschluss (2 Zeilen)\n"
                     "2. Ein bis zwei Meldungen kurz (je 2 bis 3 Zeilen)\n"
                     "3. Verabschiedung bis morgen (1 bis 2 Zeilen)")
     else:
         struktur = ("1. Uhrzeit, Rubrik ansagen (1 Zeile)\n"
-                    "2. Wetter in einem Satz (1 Zeile)\n"
-                    "3. Die Meldungen, je 2 bis 4 Zeilen\n"
-                    "4. Kurzer Abschluss mit Hinweis auf den nächsten Block (1 Zeile)")
+                    "2. Die Meldungen, je 2 bis 4 Zeilen\n"
+                    "3. Kurzer Abschluss mit Hinweis auf den nächsten Block (1 Zeile)")
 
-    return f"""Du schreibst ein kurzes Radioskript für FoxRadio, ein persönliches Programm für einen einzigen Hörer (Marco, Spieleentwickler mit Unreal Engine, arbeitet in einer Halle in Ellwangen). Zwei Sprecher:
+    return f"""Du schreibst ein kurzes Radioskript für FoxRadio, ein persönliches Programm für einen einzigen Hörer (Marco, Zerspanungsmechaniker, arbeitet meist in der Montage in einer Halle in Ellwangen und entwickelt nebenbei ein Rollenspiel mit Unreal Engine). Zwei Sprecher:
 A: {cfg['speaker_a']}
 B: {cfg['speaker_b']}
 

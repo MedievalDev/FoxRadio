@@ -1,5 +1,5 @@
 @echo off
-rem FoxRadio Nachtlauf. In der Windows-Aufgabenplanung um 05:00 eintragen
+rem FoxRadio Nachtlauf. In der Windows-Aufgabenplanung um 01:00 eintragen
 rem ("Computer aufwecken, um diese Aufgabe auszufuehren" anhaken).
 set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
 cd /d %~dp0
