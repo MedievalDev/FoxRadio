@@ -40,16 +40,18 @@
   "jingles": {
     "enabled": true,
     "dir": "jingles",
-    "gain_db": -3.0,
+    "gain_db": -9.0,
     "pause_ms": 250
   },
   "music": {
     "enabled": true,
     "dir": "music",
     "gain_db": -20.0,
-    "fade_s": 2.0,
+    "fade_s": 0.4,
     "lead_s": 0.8,
-    "tail_s": 1.5
+    "tail_s": 1.5,
+    "level": true,
+    "level_window_s": 3.0
   },
   "_comfy_backend": "Alternative: backend comfy mit exportierten Workflows je Stimme: voices: { \"A\": { \"workflow\": \"voices/a.json\" } }, dazu comfy_url und comfy_bat.",
   "comfy_url": "http://127.0.0.1:8188",

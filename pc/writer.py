@@ -667,13 +667,13 @@ Struktur, genau in dieser Reihenfolge:
 Regeln:
 - {lo} bis {hi} Zeilen für die News (Tipp und Rezept kommen dazu). A beginnt und beendet.
 - Kein Wechselgespräch: Sprecher wechseln nur an Rubrikgrenzen. Innerhalb einer Rubrik spricht die zuständige Stimme alle Zeilen am Stück. Beim Rubrikwechsel höchstens eine kurze Übergabe (ein Satz), keine Rückfragen, kein Hin und Her.
-- Jingles: Setze als eigene Zeile mit speaker "J" einen Marker vor die Rubriken: "wetter" vor dem Wetter, "news" vor den Gaming-News, "dev" vor Spieleentwicklung und KI, "tipp" vor dem Tipp des Tages, "rezept" vor dem Rezept. Marker zählen als Zeilen bei line_start und line_end. Keinen Marker vor der Begrüßung oder vor der Übergabe zum Tagesthema.
+- Genau ein Jingle je Block: eine einzige Zeile mit speaker "J" und Text "news", direkt vor der ersten Gaming-Meldung. In der Morning Show steht sie damit zwischen dem Wetter und den News. Sonst keine Jingles. Die Zeile zählt bei line_start und line_end mit.
 - Deutsch, gesprochene Sprache, kurze Sätze. Der Text wird von einer Sprachsynthese vorgelesen: keine URLs, keine Abkürzungen, keine Sonderzeichen, keine Klammern, keine Gedankenstriche, Zahlen bis zwölf als Wort.
 - Wenn eine Meldung unklar ist, lieber weglassen als raten. Nur genannte Fakten, keine Zahlen erfinden.
 - Kein Schreib-Slop: keine Kontraste der Art "nicht X, sondern Y"; keine Anläufe wie "Was viele nicht wissen", "Das Beste daran", "Ganz ehrlich"; kein Bedeutungsgetue wie "Meilenstein", "unterstreicht", "wegweisend", "zeigt einmal mehr"; keine unbenannten Quellen wie "Experten sind sich einig"; keine Fazit-Sätze am Ende ("Alles in allem", "Man darf gespannt sein"); keine tiefsinnigen Schlusspointen; kein Rotieren von Begriffen für dasselbe Ding; keine leeren Adverbien wie "absolut", "wirklich", "tatsächlich", "spannend". Fakten sagen, Wertung nur mit Begründung.
 
 Antworte nur mit JSON in dieser Form:
-{{"lines": [{{"speaker": "A", "text": "..."}}, {{"speaker": "J", "text": "wetter"}}, ...],
+{{"lines": [{{"speaker": "A", "text": "..."}}, {{"speaker": "J", "text": "news"}}, ...],
  "articles": [{{"item_id": "n01", "title": "Titel für die App", "teaser": "ein Satz", "body": "drei bis sechs Sätze Zusammenfassung, nur aus den gegebenen Fakten", "line_start": 5, "line_end": 8}}, ...]{', "tip": {...}' if block.get('extra') == 'tip' else ''}{', "recipe": {...}' if block.get('extra') == 'recipe' else ''}}}
 line_start und line_end sind Indizes in lines (nullbasiert, inklusive) der Zeilen, die zu dieser Meldung gehören. Für jede verwendete Meldung genau einen Artikel."""
 
@@ -734,7 +734,7 @@ def call_fake(cfg, block, prompt):
     if block is None:
         return {"name": "", "is_game": False}
     lines = [{"speaker": "A", "text": f"Es ist {spoken_time(block['slot'])}, hier ist FoxRadio."},
-             {"speaker": "J", "text": "news"}]
+             {"speaker": "J", "text": "news"}]   # genau einer je Block
     articles = []
     for it in block["items"]:
         start = len(lines)
@@ -770,21 +770,30 @@ def generate(cfg, block, prompt):
     raise ValueError(f"unbekanntes Backend {b}")
 
 
-JINGLES = ("wetter", "news", "dev", "tipp", "rezept", "thema", "intro", "outro")
+# Nur ein Jingle im Programm, und der laeuft einmal je Block vor den News.
+JINGLES = ("news",)
 
 
 def validate(data, block):
     lines = data.get("lines") or []
     if len(lines) < 2:
         raise ValueError("zu wenig Zeilen")
+    gesehen = 0
+    behalten = []
     for l in lines:
         if l.get("speaker") == "J":
             l["text"] = (l.get("text") or "").strip().lower()
-            if l["text"] not in JINGLES:
-                raise ValueError(f"unbekannter Jingle: {l}")
+            # Unbekannte Marker und jeder weitere fliegen raus statt den Block zu
+            # kippen. Gezaehlt wird nur, was auch bleibt.
+            if l["text"] not in JINGLES or gesehen >= 1:
+                continue
+            gesehen += 1
+            behalten.append(l)
             continue
         if l.get("speaker") not in ("A", "B") or not (l.get("text") or "").strip():
             raise ValueError(f"kaputte Zeile: {l}")
+        behalten.append(l)
+    data["lines"] = lines = behalten
 
     def clamp(a):
         s, e = int(a.get("line_start", 0)), int(a.get("line_end", 0))
@@ -857,7 +866,6 @@ def write_block(cfg, block, weather, day, out_dir, theme=None):
             hist["recipes"].append(r["title"])
 
     if part:
-        lines.append({"speaker": "J", "text": "thema"})
         start = len(lines)
         lines += part["lines"]
         it = theme.get("item") or {}

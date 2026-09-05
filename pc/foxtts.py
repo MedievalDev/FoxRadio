@@ -93,9 +93,11 @@ DEFAULTS = {
         "enabled": True,
         "dir": os.path.join(HERE, "music"),
         "gain_db": -20.0,
-        "fade_s": 2.0,
+        "fade_s": 0.4,          # nur gegen das Knacken am Anfang und Ende
         "lead_s": 0.8,
         "tail_s": 1.5,
+        "level": True,          # Lautstaerke ueber den ganzen Block gleich halten
+        "level_window_s": 3.0,
     },
 }
 
@@ -643,6 +645,29 @@ def music_files(cfg):
     return sorted(files)
 
 
+def level_audio(x, sr, fenster_s=3.0):
+    """Zieht die Lautstaerke auf einen gleichbleibenden Pegel. Musik aus Suno
+    hat Strophen und Steigerungen; unter gesprochenem Text soll sie aber
+    durchgehend gleich leise liegen. Gemessen wird der gleitende Effektivwert,
+    die Korrektur ist gedeckelt, damit Pausen nicht hochgezogen werden."""
+    import numpy as np
+    w = max(1, int(fenster_s * sr))
+    kissen = np.pad(x.astype(np.float32) ** 2, (w // 2, w // 2), mode="edge")
+    summe = np.cumsum(kissen)
+    rms = np.sqrt(np.maximum((summe[w:] - summe[:-w]) / w, 1e-12))[:len(x)]
+    ziel = float(np.median(rms))
+    if ziel <= 1e-6:
+        return x
+    faktor = np.clip(ziel / rms, 0.35, 2.5)
+    # Korrektur selbst glaetten, sonst pumpt es hoerbar
+    k = max(1, int(0.5 * sr))
+    kern = np.ones(k, dtype=np.float32) / k
+    faktor = np.convolve(np.pad(faktor, (k, k), mode="edge"), kern, mode="same")[k:k + len(x)]
+    aus = x * faktor
+    spitze = float(np.abs(aus).max())
+    return aus / spitze * 0.98 if spitze > 0.98 else aus
+
+
 def music_bed(cfg, sr, n, files):
     """Liefert ein leises, ein- und ausgeblendetes Musikstueck mit n Samples
     (float32, -1..1) und den Dateinamen. Laengere Stuecke starten an einer
@@ -671,6 +696,8 @@ def music_bed(cfg, sr, n, files):
     track = track[start:start + n].copy()
     if len(track) < n:
         track = np.pad(track, (0, n - len(track)))
+    if m.get("level", True):
+        track = level_audio(track, sr, m.get("level_window_s", 3.0))
     track *= 10 ** (m["gain_db"] / 20)
     fade = min(int(m["fade_s"] * sr), n // 2)
     if fade > 0:
