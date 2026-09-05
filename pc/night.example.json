@@ -1,0 +1,14 @@
+{
+  "_hinweis": "Als night.json speichern. upload.method: none | dir | ftp. Für alchemy-fox.de FTP-Zugang aus dem Hosting-Panel eintragen, remote_dir ist der Ordner, der per .htaccess geschützt wird.",
+  "upload": {
+    "method": "ftp",
+    "host": "ftp.alchemy-fox.de",
+    "user": "FTP-BENUTZER",
+    "password": "FTP-PASSWORT",
+    "remote_dir": "/foxradio"
+  },
+  "ntfy_topic": "",
+  "shutdown": false,
+  "shutdown_delay_s": 120,
+  "keep_days": 7
+}

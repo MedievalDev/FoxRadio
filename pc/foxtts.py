@@ -381,12 +381,14 @@ def render_block(cfg, script_path, out_path):
         path, secs = render_line(api, cfg, voice, text, work)
         total += secs
         audio = decode_audio(path, sr)
-        stats.append({"n": n, "voice": voice, "chars": len(text), "render_s": round(secs, 2),
-                      "audio_s": round(len(audio) / sr, 2), "file": os.path.basename(path)})
-        log(f"[{n}/{len(lines)}] {voice}: {secs:5.1f}s Render, {len(audio)/sr:5.1f}s Audio, {len(text)} Zeichen")
         if parts:
             parts.append(silence(cfg["pause_ms"]))
+        start_s = sum(len(x) for x in parts) / sr
         parts.append(audio)
+        stats.append({"n": n, "voice": voice, "chars": len(text), "render_s": round(secs, 2),
+                      "audio_s": round(len(audio) / sr, 2), "start_s": round(start_s, 2),
+                      "end_s": round(start_s + len(audio) / sr, 2), "file": os.path.basename(path)})
+        log(f"[{n}/{len(lines)}] {voice}: {secs:5.1f}s Render, {len(audio)/sr:5.1f}s Audio, {len(text)} Zeichen")
     block = normalize(np.concatenate(parts))
     write_audio(out_path, block, sr, cfg["mp3_bitrate"])
     dur = len(block) / sr
@@ -396,6 +398,7 @@ def render_block(cfg, script_path, out_path):
     with open(os.path.splitext(out_path)[0] + ".json", "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
     log(f"Fertig: {out_path} ({dur:.1f}s Audio, {total:.1f}s Renderzeit, Faktor {summary['realtime_factor']})")
+    return summary
 
 
 # ----------------------------------------------------------------------------

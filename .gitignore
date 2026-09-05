@@ -11,3 +11,5 @@ pc/work/
 pc/foxtts.json
 __pycache__/
 *.pyc
+pc/night.json
+pc/writer.json

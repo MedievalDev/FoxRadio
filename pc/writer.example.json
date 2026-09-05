@@ -1,0 +1,7 @@
+{
+  "_hinweis": "Als writer.json speichern. backend: claude-cli (Claude Code headless, Standard) | api (Anthropic-SDK, ANTHROPIC_API_KEY) | fake (Test).",
+  "backend": "claude-cli",
+  "claude_cli": "claude",
+  "claude_cli_model": "opus",
+  "api_model": "claude-opus-5"
+}
