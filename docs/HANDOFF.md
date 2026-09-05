@@ -1,112 +1,116 @@
 # Übergabe an die lokale Session
 
-Stand 2026-09-05. Aus der Cloud gebaut und getestet: App komplett (Overlay,
-Sendeplan, Sync, Artikel), PC-Pipeline komplett gegen Mock-Server. Die lokale
-Session hat Schritt 1 (Feeds) erledigt und in Schritt 2 das direkte
-TTS-Backend gebaut. Was fehlt, braucht den PC, den Webspace und das Handy. Reihenfolge einhalten,
-jeder Schritt ist für sich prüfbar.
-
-## 1. Feeds prüfen (10 Minuten)
+Stand 2026-09-05, nachmittags. Aus der Cloud gebaut: App komplett (Overlay,
+Sendeplan, Sync, Artikel), PC-Pipeline gegen Mock-Server. Am PC seitdem
+erledigt: Feeds geprüft und ersetzt, Stimmen laufen, Webspace steht, der
+Probelauf mit Platzhalter-Texten ist durch. Offen ist, was an Marco hängt
+(Claude-Login, paramiko-OK, Musik, Stimmen abnicken) und danach Handy und
+Aufgabenplanung. Reihenfolge einhalten, jeder Schritt ist für sich prüfbar.
 
 ```
 set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
-%PY% pc\feeds.py check
-%PY% pc\feeds.py weather
 ```
 
-Die URLs in `pc/feeds.json` waren aus der Cloud nicht erreichbar und sind
-ungeprüft. Tote Quellen ersetzen oder streichen. Für `anthropic.com/news`
-prüfen, ob `parse_anthropic_news` in `pc/feeds.py` Titel und Datum findet,
-sonst die Regex an die echte Seite anpassen. Ergebnis mit
-`%PY% pc\feeds.py fetch -o pc\work\feeds.json` ansehen.
+## 1. Feeds — erledigt (Commit 3bc9351)
 
-## 2. Stimmen (Phase 2)
+`%PY% pc\feeds.py check` läuft grün, `fetch` liefert 30 Meldungen ohne Fehler.
+Tot waren GameStar (Pfad korrigiert), itch.io, RPG Codex und RPGWatch (403,
+auch mit Browser-Kennung), Kickstarter-Feeds ignorieren die Kategorie und
+liefern Bücher. Indie kommt jetzt von RPGamer, Turn Based Lovers, Indie Games
+Plus, Alpha Beta Gamer, IndieDB News, einem Reddit-Multi-Feed (Top des Tages)
+und drei GitHub-Suchen (`type: github`, Trainer und Hacks werden gefiltert).
+`parse_anthropic_news` liest Titel, Datum und Teaser aus den echten Elementen.
 
-Stand der lokalen Session (Commit 89b977a): Der ComfyUI-Node rendert mit dem
-transformers 5.9 von ComfyUI nicht. Qwen3-TTS läuft deshalb direkt aus dem
-ComfyUI-Ordner in einem eigenen Arbeitsprozess mit der isolierten Umgebung
-`qwen_tts_env` (Backend `direct`, Standard in `foxtts.example.json`). Das
-Modell bleibt geladen, sdpa-Attention, Echtzeitfaktor 2,2. Damit passen 300
-Zeilen à fünf Sekunden in etwa 55 Minuten, also in das Fenster 05:00 bis 06:30.
+Merken: Reddit erlaubt nur eine Anfrage je Minute (`check` direkt vor `fetch`
+schlägt dort fehl, im Nachtlauf egal), GitHub zehn je Minute (2 s Pause im
+Code). Je Quelle gibt es `max` und `since_hours`, der Rubrik-Deckel geht reihum
+über die Quellen. Nachjustieren nach ein paar Tagen Hören: Golem allgemein
+bringt Uhren-Tests und Windparks, Hacker News bringt US-Politik.
 
-1. `pc\foxtts.example.json` nach `pc\foxtts.json`, Pfade unter `direct` prüfen.
-2. Referenzen erzeugen, je Stimme einmal:
-   `%PY% pc\foxtts.py line -v A_design -t "<Satz>" -o pc\voices\a_ref.wav`
-   und dasselbe mit `B_design` nach `b_ref.wav`. Anhören. Passt die Stimme
-   nicht: `instruct` oder `seed` unter `A_design` und `B_design` ändern,
-   wiederholen. Den gesprochenen Satz in `pc\voices\ref_texte.txt` und
-   exakt so als `ref_text` bei `A` und `B` eintragen.
-3. Testdialog: `%PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3`,
-   anhören, `test.json` daneben zeigt Renderzeit pro Zeile und den Faktor.
-   0.6B oder 1.7B über `model_size` bei `A` und `B`.
-4. Musikbett: eigene, rechtefreie Musikdateien nach `pc\music\` legen, pro
-   Block wird eine zufällig gewählt und mit minus 20 dB untergelegt. Ohne
-   Dateien läuft der Block ohne Musik. Lautstärke über `music.gain_db`.
+## 2. Stimmen — läuft, Abnahme offen (Commit 89b977a)
 
-Nur falls `direct` nicht läuft: Backend `comfy` mit exportierten Workflows,
-fertige Vorlagen für drei Node-Pakete in `pc/voices/templates/`, Anleitung
-dort. `foxtts.py probe` und `voice-design` gehören zu diesem Weg.
+Der installierte Node 1038lab/ComfyUI-QwenTTS rendert in diesem ComfyUI
+nicht: sein `qwen_tts` braucht transformers 4.57, ComfyUI hat 5.9 (Krea 2,
+WanVideo). Der Patch `qwen_tts_transformers5_patches.diff` lässt den Import
+durch, die Generierung bricht dann in der Attention. Deshalb Backend `direct`
+in `foxtts.py`: ein Arbeitsprozess in der ComfyUI-Python mit der isolierten
+`qwen_tts_env` (transformers 4.57.3) davor, Modell bleibt geladen, Aufträge als
+JSON-Zeilen. ComfyUI muss dafür nicht laufen.
 
-## 3. Texte (Phase 4)
+- Stimmen in `pc\foxtts.json`: `A_design`/`B_design` (Voice Design, fester
+  Seed) erzeugen die Referenzen `pc\voices\a_ref.wav` und `b_ref.wav`, `A`/`B`
+  klonen daraus (`ref_text` exakt wie gesprochen, steht in
+  `voices\ref_texte.txt`). A: sachlicher Mann, B: warme Frauenstimme (Marcos
+  Beschreibung und Seed aus `qwen3_tts_speak.py`).
+- Neue Stimme: Beschreibung unter `X_design`, dann
+  `%PY% pc\foxtts.py line -v X_design -t "Text" -o pc\voices\x_ref.wav`,
+  anhören, `X` als clone darauf zeigen lassen.
+- Renderzeit: Faktor 1,4 bis 1,7 mit `attention: sdpa` (ohne sdpa 4 bis 5),
+  gemessen mit 28 % Fremdlast durch den UE4-Editor. 80 Zeilen des Probelaufs
+  in 431 s. Reserve, falls es nachts knapp wird: `generate_voice_clone` kann
+  Listen, mehrere Zeilen derselben Stimme in einem Aufruf.
+- Nur 1.7B-Modelle sind installiert (Base, CustomVoice, VoiceDesign). Die
+  Frage 0.6B stellt sich erst, wenn 0.6B-Base geladen wird.
+- Musikbett: Dateien in `pc\music\` (gitignored), eine wird je Block zufällig
+  gewählt, -20 dB, Ein- und Ausblendung, 0,8 s Vorlauf, 1,5 s Nachlauf. Zurzeit
+  liegt dort nur ein synthetischer `test_pad.wav`.
+- Offen: Marco hört `pc\work\test.mp3` und sagt, ob A und B bleiben.
 
-`pc\writer.example.json` nach `pc\writer.json`. Standard ist `claude-cli`,
-das nutzt `claude -p` mit dem Abo. Prüfen, dass `claude` im PATH ist und
-`claude -p --output-format json` funktioniert. Testen:
+Das comfy-Backend mit exportierten Workflows bleibt im Code, Vorlagen in
+`pc\voices\templates\`, für den Fall, dass der Node irgendwann läuft.
+
+## 3. Texte — blockiert durch Login
+
+`pc\writer.json` ist angelegt (Backend `claude-cli`). `claude -p` meldet
+zurzeit `401 OAuth access token has expired`: im Terminal `claude` starten und
+`/login`. Danach:
 
 ```
-%PY% pc\writer.py plan --feeds pc\work\feeds.json
-%PY% pc\writer.py write --feeds pc\work\feeds.json --out pc\work\scripts --only 07:00
+%PY% pc\writer.py write --feeds pc\work\feeds.json --weather pc\work\weather.json --out pc\work\scripts --only 07:00
 ```
 
 Skript lesen. Wenn der Dialog kippt (Floskeln, Erfundenes), Prompt in
-`build_prompt` nachschärfen, nicht lockern. Alternative Backend `api`
-braucht `pip install anthropic` in der ComfyUI-Python und `ANTHROPIC_API_KEY`.
+`build_prompt` nachschärfen, nicht lockern. Mit `--backend fake` läuft die
+Pipeline schon durch (geprüft). Alternative `api` braucht `pip install
+anthropic` in der ComfyUI-Python und `ANTHROPIC_API_KEY`.
 
-## 4. Webspace
+## 4. Webspace — erledigt (Commit 4e3578c)
 
-Auf alchemy-fox.de einen Ordner `foxradio` anlegen, mit `.htaccess` und
-`.htpasswd` schützen (Basic Auth). Vorlage in `pc/webspace/htaccess.example`,
-Passwortdatei mit `pc/webspace/make_htpasswd.py` oder über den
-Verzeichnisschutz im Hosting-Panel. Upload: Strato nimmt weder FTP noch FTPS,
-nur SSH. In `pc\night.json` daher `method: sftp` mit SSH-Zugang (paramiko,
-Commit 4e3578c), Vorlage `night.example.json`, `remote_dir` ist der Ordner.
-Der Basic-Auth-Zugang der App steht als `web_user` und `web_password` mit in
-`night.json`. Test:
+`https://alchemy-fox.de/foxradio/` liegt an, `.htaccess` mit absolutem Pfad
+`/home/www/Dokus/foxradio/.htpasswd`, Benutzer `marco`. Ohne Passwort 401,
+mit Passwort 200. Zugang in `pc\night.json` unter `web_user`/`web_password`
+(gitignored), das trägt Marco in die App ein.
 
-```
-%PY% pc\night.py upload-status "Test"
-```
+Strato nimmt kein FTP und kein FTPS an, nur SSH. `night.py` lädt deshalb per
+SFTP hoch (`method: sftp`, Host `5017972395.ssh.w2.strato.hosting`, nicht
+`ssh.strato.de`). Dafür braucht die Python, mit der `night.bat` läuft,
+paramiko: `%PY% -m pip install paramiko` — wartet auf Marcos OK. Getestet ist
+der Upload mit der normalen Python 3.13, dort ist paramiko drin:
+`upload-status` schreibt `status.json`, mit Passwort abrufbar.
 
-Danach muss `https://alchemy-fox.de/foxradio/status.json` mit Passwort
-abrufbar sein.
+## 5. Probelauf und erster echter Lauf — halb
 
-## 5. Probelauf und erster echter Lauf
+`run --backend fake --no-upload --no-shutdown` ist durch: 10 Blöcke, 25
+Artikel mit Nachhör-Offsets, 28 Bilder, `playlist.json`, `articles.json`,
+`status.json` in `pc\work\2026-09-05\`. Offen: `run --no-shutdown` mit echten
+Texten, sobald Login (3) und paramiko (4) da sind. Dann einen Block anhören.
 
-```
-%PY% pc\night.py run --backend fake --no-upload --no-shutdown
-%PY% pc\night.py run --no-shutdown
-```
-
-Ergebnis in `pc\work\<datum>\`: Skripte, MP3 pro Slot, `playlist.json`,
-`articles.json`, `img\`. Einen Block anhören.
-
-## 6. Handy
+## 6. Handy — offen
 
 In der App unter Verbindung Adresse `https://alchemy-fox.de/foxradio`,
-Benutzer und Passwort eintragen, "Jetzt laden". Die Heute-Karte muss den
-Tag zeigen, Artikel lesen, Nachhören probieren. Sendeplan an. Am nächsten
-Arbeitstag um 07:00 mit laufender Musik testen. Protokoll in der App zeigt,
-was der Wecker gemacht hat.
+Benutzer `marco` und das Passwort aus `night.json` eintragen, "Jetzt laden".
+Die Heute-Karte muss den Tag zeigen, Artikel lesen, Nachhören probieren.
+Sendeplan an. Am nächsten Arbeitstag um 07:00 mit laufender Musik testen.
+Protokoll in der App zeigt, was der Wecker gemacht hat.
 
-## 7. Automatik
+## 7. Automatik — offen
 
 - `pc\night.bat` in der Windows-Aufgabenplanung: täglich 05:00, "Computer
   aufwecken, um diese Aufgabe auszuführen" an, "Nur ausführen, wenn Benutzer
-  angemeldet" beachten, sonst startet die ComfyUI-Konsole nicht sichtbar.
+  angemeldet" beachten. ComfyUI wird nicht mehr gebraucht, nur die GPU.
 - Wake-on-RTC im BIOS oder SwitchBot, damit der PC um 05:00 überhaupt an ist.
 - In `night.json` `"shutdown": true`, wenn der Lauf sauber durchläuft.
-- Optional `"ntfy_topic"` setzen und die ntfy-App am Handy abonnieren,
-  dann kommt bei Fehlern eine Nachricht. Die App zeigt den Status auch so.
+- Optional `"ntfy_topic"` setzen und die ntfy-App am Handy abonnieren.
 
 ## Offen und Annahmen
 
@@ -117,3 +121,6 @@ was der Wecker gemacht hat.
 - Feed-Auswahl und Rubrik-Zuteilung in `writer.plan_blocks` sind ein
   Startpunkt und sollen nach ein paar Tagen Hören nachjustiert werden.
 - Bilder kommen aus og:image der Artikel, keine Rechteprüfung, nur für dich.
+- Die Cloud-Session hat parallel auf denselben Branch gepusht (Vorlagen,
+  Webspace-Helfer); beides ist drin. Nicht zwei Sessions gleichzeitig auf
+  dem Branch arbeiten lassen.

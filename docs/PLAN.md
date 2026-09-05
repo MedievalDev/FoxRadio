@@ -127,7 +127,14 @@ Rollen sollten klar getrennt sein, sonst klingen beide gleich:
 Qwen3-TTS kann Tonfall, Tempo und Emotion per Anweisung steuern. Damit spricht
 derselbe Sprecher den News-Teil nüchtern und den Gaming-Teil aufgeräumter.
 
-**Wo es läuft:** Qwen3-TTS ist als ComfyUI-Nodes installiert.
+**Wo es läuft (Stand 2026-09-05):** Qwen3-TTS läuft direkt aus dem ComfyUI-Ordner,
+nicht über den Node. Installiert ist 1038lab/ComfyUI-QwenTTS, aber sein `qwen_tts`
+braucht transformers 4.57, ComfyUI hat 5.9. Deshalb startet `foxtts.py` einen
+Arbeitsprozess mit der isolierten `qwen_tts_env`, Modell bleibt geladen. Gemessen:
+Faktor 1,4 bis 1,7 Echtzeit bei 1.7B mit sdpa. Der folgende Absatz beschreibt den
+ursprünglichen ComfyUI-Weg, der als Backend `comfy` erhalten bleibt.
+
+**Ursprünglicher Plan:** Qwen3-TTS ist als ComfyUI-Nodes installiert.
 - ComfyUI Portable: `C:\Users\marco\Desktop\ComfyUI_windows_portable`
 - Start: `run_nvidia_gpu.bat` in diesem Ordner
 - API: `http://127.0.0.1:8188/`
@@ -190,8 +197,10 @@ der Rest. Offene Entscheidung. Die Uhrzeit spricht die App schon jetzt live
 - [x] Unterbrechung: Pause oder Ducking? → beides, in der App umschaltbar
 - [x] Testgerät: Xiaomi Mi 10T Lite 5G (Android-Version ungeprüft, vermutlich 12)
 - [ ] Wetter: mitgerendert (veraltet) oder live auf dem Handy (Extraaufwand)?
-- [ ] Welche Gaming-, Entwickler- und Indie-RPG-Feeds?
-- [ ] Die zwei Stimmen definieren und gegeneinander testen
+- [x] Welche Gaming-, Entwickler- und Indie-RPG-Feeds? → `pc/feeds.json`, geprüft
+      2026-09-05, Nachjustieren nach ein paar Tagen Hören
+- [x] Die zwei Stimmen definieren und gegeneinander testen → A sachlicher Mann, B
+      warme Frau, beide Design plus Clone (2026-09-05), Abnahme durch Marco offen
 - [ ] Qwen3-TTS 0.6B oder 1.7B — Qualität gegen Renderzeit abwägen
 - [ ] Wake-on-RTC im BIOS statt SwitchBot? Zuverlässiger, falls das Board es kann
 - [ ] Was passiert, wenn der Nachtlauf fehlschlägt — alte Blöcke oder Stille?

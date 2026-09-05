@@ -45,14 +45,15 @@ Passwort des geschützten Webspace-Ordners eintragen, dann "Jetzt laden".
 
 ## PC: Nachtlauf
 
-Alles in `pc/`, nur Standardbibliothek plus PyAV und numpy, die in der
-eingebetteten Python von ComfyUI schon drin sind:
+Alles in `pc/`, Standardbibliothek plus PyAV, numpy und PIL aus der
+eingebetteten Python von ComfyUI, dazu paramiko für den SFTP-Upload:
 
 ```
 set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
 %PY% pc\feeds.py check                       Quellen prüfen
 %PY% pc\feeds.py weather                     Wetter Ellwangen
-%PY% pc\foxtts.py probe pc\voices\a.json     Workflow prüfen
+%PY% pc\foxtts.py status                     TTS-Backend prüfen
+%PY% pc\foxtts.py line -v A_design -t "Text" -o pc\voices\a_ref.wav   Referenzstimme
 %PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3
 %PY% pc\night.py run --backend fake --no-upload --no-shutdown     Probelauf
 %PY% pc\night.py run                         echter Lauf
@@ -60,12 +61,14 @@ set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
 
 | Datei | Aufgabe |
 |---|---|
-| `feeds.py`, `feeds.json` | RSS/Atom-Quellen, Anthropic-News, og:image, Wetter über Open-Meteo |
+| `feeds.py`, `feeds.json` | RSS/Atom-Quellen, Anthropic-News, GitHub-Suche, og:image, Wetter über Open-Meteo |
 | `writer.py`, `writer.example.json` | Meldungen auf Sendeplätze verteilen, Dialogskripte mit fester Rubrikenstruktur. Backend `claude-cli` (Claude Code headless), `api` (Anthropic-SDK) oder `fake` |
-| `foxtts.py`, `foxtts.example.json` | ComfyUI-API: pro Zeile rendern, FLAC dekodieren, mit Pausen schneiden, MP3 |
-| `night.py`, `night.example.json`, `night.bat` | Orchestrierung, Artikel-Audio-Offsets, Bilder, `playlist.json`, `articles.json`, `status.json`, Upload per FTP oder Ordner, ntfy bei Fehlern, optional Shutdown |
+| `foxtts.py`, `foxtts.example.json` | Qwen3-TTS: Backend `direct` (Arbeitsprozess aus dem ComfyUI-Ordner mit `qwen_tts_env`, Standard) oder `comfy` (ComfyUI-API mit Workflows). Pro Zeile rendern, mit Pausen schneiden, Musikbett aus `music/` darunter, MP3 |
+| `night.py`, `night.example.json`, `night.bat` | Orchestrierung, Artikel-Audio-Offsets, Bilder, `playlist.json`, `articles.json`, `status.json`, Upload per SFTP, FTP oder Ordner, ntfy bei Fehlern, optional Shutdown |
 | `scripts/testdialog.txt` | Testdialog für den Stimmenvergleich |
-| `voices/` | Workflows pro Stimme (API-Format aus ComfyUI), nicht im Repo |
+| `voices/` | Referenzaufnahmen der Stimmen (nicht im Repo) und Workflow-Vorlagen für das comfy-Backend |
+| `music/` | Musikbett, eigene Dateien, nicht im Repo |
+| `webspace/` | `.htaccess`-Vorlage und htpasswd-Helfer für den geschützten Ordner |
 
 Die `*.example.json` als `*.json` kopieren und ausfüllen. `night.bat` in die
 Windows-Aufgabenplanung um 05:00 eintragen, mit "Computer aufwecken".
