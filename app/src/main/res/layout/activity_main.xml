@@ -190,6 +190,16 @@
                         android:layout_weight="1"
                         android:text="@string/btn_sync" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPlayBlockNow"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_play_block_now"
+                    app:icon="@drawable/ic_play"
+                    app:iconGravity="textStart" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

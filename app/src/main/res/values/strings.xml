@@ -48,6 +48,8 @@
     <string name="today_last_sync">Zuletzt geladen: %1$s</string>
     <string name="btn_articles">Artikel lesen</string>
     <string name="btn_sync">Jetzt laden</string>
+    <string name="btn_play_block_now">Heutigen Block jetzt abspielen</string>
+    <string name="toast_no_block">Kein Block geladen. Erst Verbindung eintragen und "Jetzt laden".</string>
     <string name="toast_sync_started">Lade Tagesdaten …</string>
 
     <string name="section_connection">Verbindung</string>

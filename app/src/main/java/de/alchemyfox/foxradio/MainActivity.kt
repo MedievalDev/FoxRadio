@@ -142,6 +142,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        findViewById<View>(R.id.btnPlayBlockNow).setOnClickListener { playTodayBlockNow() }
+
         val editUrl = findViewById<EditText>(R.id.editUrl)
         val editUser = findViewById<EditText>(R.id.editUser)
         val editPass = findViewById<EditText>(R.id.editPass)
@@ -211,6 +213,28 @@ class MainActivity : AppCompatActivity() {
 
         val lines = prefs.log.lines().filter { it.isNotBlank() }.reversed()
         logText.text = if (lines.isEmpty()) getString(R.string.log_empty) else lines.joinToString("\n")
+    }
+
+    /** Spielt einen geladenen Block sofort ueber den Overlay-Weg, ohne auf den Slot zu warten. */
+    private fun playTodayBlockNow() {
+        val lib = Library(this)
+        val (date, blocks) = lib.playlist() ?: run {
+            Toast.makeText(this, R.string.toast_no_block, Toast.LENGTH_LONG).show()
+            return
+        }
+        val hour = java.time.LocalTime.now().hour
+        val slotNow = String.format(java.util.Locale.ROOT, "%02d:00", hour)
+        val block = blocks.firstOrNull { it.slot == slotNow && lib.blockFile(date, it) != null }
+            ?: blocks.lastOrNull { it.slot <= slotNow && lib.blockFile(date, it) != null }
+            ?: blocks.firstOrNull { lib.blockFile(date, it) != null }
+        val file = block?.let { lib.blockFile(date, it) }
+        if (block == null || file == null) {
+            Toast.makeText(this, R.string.toast_no_block, Toast.LENGTH_LONG).show()
+            return
+        }
+        prefs.appendLog("Manuell: Block ${block.slot} vom $date")
+        PlaybackService.start(this, "manuell", file.absolutePath)
+        refresh()
     }
 
     private fun refreshToday() {
