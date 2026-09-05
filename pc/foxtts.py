@@ -13,6 +13,7 @@ Befehle:
     start                           ComfyUI über die BAT starten, falls nötig, und warten
     probe <workflow.json>           Nodes des exportierten Workflows zeigen, Text-Knoten erkennen
     line -v A -t "Text" -o out.wav  Eine Zeile rendern
+    voice-design <workflow.json> -o ref_a.wav   Referenzstimme aus einer Design-Vorlage erzeugen
     block <script.txt> -o out.mp3   Dialog-Skript rendern und zusammenschneiden
 
 Skriptformat (block): eine Zeile pro Sprecher, "A: Text" oder "B: Text".
@@ -236,8 +237,12 @@ def probe(path):
         print(f"Text-Knoten: {e}")
 
 
-def render_line(api, cfg, voice, text, dest_dir):
-    vcfg = cfg["voices"].get(voice)
+REFERENCE_TEXT = ("Guten Morgen, hier ist FoxRadio. Es ist sieben Uhr, draußen sind zwölf Grad, "
+                  "und wir fangen mit den Nachrichten aus der Spielewelt an.")
+
+
+def render_line(api, cfg, voice, text, dest_dir, vcfg=None):
+    vcfg = vcfg or cfg["voices"].get(voice)
     if not vcfg:
         raise KeyError(f"Stimme '{voice}' nicht in foxtts.json (voices)")
     wf = copy.deepcopy(load_workflow(resolve_path(vcfg["workflow"])))
@@ -419,6 +424,10 @@ def main(argv=None):
     sb = sub.add_parser("block")
     sb.add_argument("script")
     sb.add_argument("-o", "--out", required=True)
+    sd = sub.add_parser("voice-design", help="Referenzstimme aus einer Voice-Design-Vorlage rendern")
+    sd.add_argument("workflow")
+    sd.add_argument("-o", "--out", required=True, help="Ziel-WAV, am besten im ComfyUI-Ordner input")
+    sd.add_argument("-t", "--text", default=REFERENCE_TEXT)
     args = p.parse_args(argv)
     cfg = load_config()
 
@@ -441,6 +450,15 @@ def main(argv=None):
         return 0
     if args.cmd == "block":
         render_block(cfg, args.script, args.out)
+        return 0
+    if args.cmd == "voice-design":
+        api = ensure_running(cfg)
+        path, secs = render_line(api, cfg, "design", args.text, cfg["work_dir"], vcfg={"workflow": args.workflow})
+        audio = decode_audio(path, cfg["sample_rate"])
+        out = args.out if args.out.lower().endswith(".wav") else args.out + ".wav"
+        write_audio(out, normalize(audio), cfg["sample_rate"], cfg["mp3_bitrate"])
+        log(f"Referenz: {out} ({len(audio)/cfg['sample_rate']:.1f}s, {secs:.1f}s Renderzeit)")
+        log("ref_text für die Clone-Vorlage: " + args.text)
         return 0
     return 2
 

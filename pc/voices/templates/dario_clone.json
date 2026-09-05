@@ -1,0 +1,47 @@
+{
+  "1": {
+    "class_type": "Qwen3Loader",
+    "inputs": {
+      "repo_id": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+      "source": "HuggingFace",
+      "precision": "bf16",
+      "attention": "auto",
+      "local_model_path": ""
+    }
+  },
+  "4": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": "ref_a.wav"
+    }
+  },
+  "2": {
+    "class_type": "Qwen3VoiceClone",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "text": "PLATZHALTER",
+      "seed": 42,
+      "language": "German",
+      "ref_audio": [
+        "4",
+        0
+      ],
+      "ref_text": "REFERENZTEXT: genau das, was in ref_a.wav gesprochen wird",
+      "max_new_tokens": 2048,
+      "ref_audio_max_seconds": 30.0
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "audio/foxradio"
+    }
+  }
+}

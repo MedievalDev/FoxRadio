@@ -1,0 +1,34 @@
+{
+  "4": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": "ref_a.wav"
+    }
+  },
+  "2": {
+    "class_type": "AILab_Qwen3TTSVoiceClone",
+    "inputs": {
+      "target_text": "PLATZHALTER",
+      "model_size": "1.7B",
+      "language": "German",
+      "reference_audio": [
+        "4",
+        0
+      ],
+      "reference_text": "REFERENZTEXT: genau das, was in ref_a.wav gesprochen wird",
+      "x_vector_only": false,
+      "unload_models": false,
+      "seed": 42
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "audio/foxradio"
+    }
+  }
+}

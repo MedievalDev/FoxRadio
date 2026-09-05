@@ -21,23 +21,35 @@ sonst die Regex an die echte Seite anpassen. Ergebnis mit
 
 ## 2. Stimmen in ComfyUI (Phase 2)
 
-1. ComfyUI starten, Einstellungen, Dev-Modus an.
-2. Nachsehen, welches Qwen3-TTS-Node-Paket installiert ist (Custom Nodes).
-3. Pro Stimme einen Workflow: Loader, Voice Design (Beschreibung) oder Voice
-   Clone (Referenzaudio plus Transkript), dahinter `SaveAudio`. Rollen aus
-   dem Plan: A sachlich, führt; B lockerer, kommentiert.
-4. "Save (API Format)" als `pc/voices/a.json` und `pc/voices/b.json`.
-5. `pc\foxtts.example.json` nach `pc\foxtts.json` kopieren.
-6. `%PY% pc\foxtts.py probe pc\voices\a.json` muss den Text-Knoten erkennen.
-   Sonst `text_node` und `text_input` in `foxtts.json` setzen. Andere feste
-   Eingänge (Seed, Anweisung) gehen über `overrides` je Stimme, Form
-   `"12.instruct": "..."`.
+Vorlagen für die drei gängigen Node-Pakete liegen fertig in
+`pc/voices/templates/` (Namen und Eingänge aus dem Quellcode der Pakete).
+Es muss nichts mehr in der ComfyUI-Oberfläche zusammengeklickt werden.
+
+1. ComfyUI starten. Unter Custom Nodes nachsehen, welches Qwen3-TTS-Paket
+   installiert ist: DarioFT (`dario_`), flybirdxx (`fly_`) oder 1038lab
+   (`ailab_`). Ist es ein anderes, einen Design-Workflow per Hand bauen und
+   über "Save (API Format)" exportieren, der Rest bleibt gleich.
+2. `pc\foxtts.example.json` nach `pc\foxtts.json` kopieren.
+3. Stimme A: `instruct` in der `*_design.json` prüfen (Vorschlag steht drin),
+   dann die Referenz erzeugen, direkt in den ComfyUI-Eingangsordner:
+   `%PY% pc\foxtts.py voice-design pc\voices\templates\dario_design.json -o C:\Users\marco\Desktop\ComfyUI_windows_portable\ComfyUI\input\ref_a.wav`
+   Anhören. Passt sie nicht: Beschreibung oder `seed` ändern, wiederholen.
+4. `*_clone.json` nach `pc\voices\a.json` kopieren, `ref_text` auf den Satz
+   setzen, den `voice-design` ausgegeben hat, `LoadAudio.audio` bleibt
+   `ref_a.wav`.
+5. Stimme B genauso mit `ref_b.wav` und `pc\voices\b.json`.
+6. `%PY% pc\foxtts.py probe pc\voices\a.json` muss den Text-Knoten erkennen
+   (bei allen Vorlagen geprüft).
 7. `%PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3`,
    anhören, `test.json` daneben zeigt Renderzeit pro Zeile und Echtzeitfaktor.
-   Damit 0.6B oder 1.7B entscheiden. Ziel: 150 bis 300 Zeilen zwischen 05:00
+   Damit 0.6B oder 1.7B entscheiden (`model_size`, `model_choice` oder
+   `repo_id` in der Clone-Vorlage). Ziel: 150 bis 300 Zeilen zwischen 05:00
    und 06:30, also Faktor unter etwa 1,5 bei 1.7B, sonst 0.6B.
-8. Wenn `unload_model_after_generate` im Node steht: aus, sonst lädt jede
-   Zeile das Modell neu.
+8. Modell-Entladen ist in den Vorlagen aus (`unload_model_after_generate`,
+   `unload_models`), sonst lädt jede Zeile das Modell neu.
+
+Warum Design plus Clone: Voice Design liefert nicht bei jeder Zeile dieselbe
+Stimme. Einmal designen, als Referenz speichern, alles per Clone rendern.
 
 ## 3. Texte (Phase 4)
 

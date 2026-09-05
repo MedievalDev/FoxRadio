@@ -1,0 +1,35 @@
+{
+  "1": {
+    "class_type": "Qwen3Loader",
+    "inputs": {
+      "repo_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "source": "HuggingFace",
+      "precision": "bf16",
+      "attention": "auto",
+      "local_model_path": ""
+    }
+  },
+  "2": {
+    "class_type": "Qwen3VoiceDesign",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "text": "PLATZHALTER",
+      "instruct": "Ruhige, klare Männerstimme mittlerer Tonlage. Sachlich, deutlich, wie ein Nachrichtensprecher, natürliches Tempo, freundlich ohne Übertreibung.",
+      "language": "German",
+      "seed": 42
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "audio/foxradio"
+    }
+  }
+}
