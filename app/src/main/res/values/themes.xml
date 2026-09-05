@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FoxRadio" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/fox_orange</item>
+        <item name="colorPrimaryDark">@color/fox_orange_dark</item>
+        <item name="colorAccent">@color/fox_orange</item>
+    </style>
+</resources>

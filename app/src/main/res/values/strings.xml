@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FoxRadio</string>
+
+    <string name="section_status">Status</string>
+    <string name="status_next_slot">Nächster Block: %1$s</string>
+    <string name="status_schedule_off">Sendeplan ist aus.</string>
+    <string name="status_no_exact_alarm">Exakte Wecker nicht erlaubt. Bitte unten freigeben.</string>
+
+    <string name="section_test">Test</string>
+    <string name="btn_play_now">Testblock jetzt abspielen</string>
+    <string name="btn_play_in_2min">Test in 2 Minuten (Handy sperren, Musik laufen lassen)</string>
+
+    <string name="section_mode">Unterbrechung</string>
+    <string name="mode_pause">Fadeout + Pause: Musik wird ausgeblendet und pausiert, danach wieder eingeblendet</string>
+    <string name="mode_duck">Nur leiser (Ducking): Musik läuft leise weiter</string>
+
+    <string name="section_schedule">Sendeplan</string>
+    <string name="switch_schedule">Sendeplan aktiv (07:00 bis 16:00, stündlich)</string>
+    <string name="switch_weekdays">Nur Montag bis Freitag</string>
+
+    <string name="section_permissions">Berechtigungen</string>
+    <string name="btn_exact_alarm">Exakte Wecker freigeben</string>
+    <string name="btn_battery">Akku-Optimierung für FoxRadio ausschalten</string>
+    <string name="btn_autostart">Xiaomi Autostart öffnen</string>
+    <string name="perm_ok">erteilt</string>
+    <string name="perm_missing">fehlt</string>
+    <string name="perm_line_exact">Exakte Wecker: %1$s</string>
+    <string name="perm_line_battery">Akku-Optimierung ignorieren: %1$s</string>
+    <string name="perm_line_notify">Benachrichtigungen: %1$s</string>
+    <string name="autostart_not_found">Autostart-Seite nicht gefunden, App-Info wird geöffnet.</string>
+
+    <string name="section_log">Protokoll</string>
+    <string name="btn_clear_log">Protokoll leeren</string>
+
+    <string name="notif_channel_name">Wiedergabe</string>
+    <string name="notif_channel_desc">Läuft, während ein FoxRadio-Block abgespielt wird.</string>
+    <string name="notif_title">FoxRadio</string>
+    <string name="notif_text">Block läuft</string>
+
+    <string name="tts_intro">FoxRadio. Es ist %1$s. Wenn du das hörst, funktioniert das Overlay. Gleich geht die Musik weiter.</string>
+</resources>
