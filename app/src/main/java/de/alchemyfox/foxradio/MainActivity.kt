@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var modeHint: TextView
     private lateinit var switchSchedule: MaterialSwitch
     private lateinit var switchWeekdays: MaterialSwitch
+    private lateinit var switchOnlyMusic: MaterialSwitch
     private lateinit var dotExact: View
     private lateinit var dotBattery: View
     private lateinit var dotNotify: View
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         modeHint = findViewById(R.id.modeHint)
         switchSchedule = findViewById(R.id.switchSchedule)
         switchWeekdays = findViewById(R.id.switchWeekdays)
+        switchOnlyMusic = findViewById(R.id.switchOnlyMusic)
         dotExact = findViewById(R.id.dotExact)
         dotBattery = findViewById(R.id.dotBattery)
         dotNotify = findViewById(R.id.dotNotify)
@@ -105,6 +107,12 @@ class MainActivity : AppCompatActivity() {
             prefs.weekdaysOnly = checked
             Scheduler.sync(this)
             refresh()
+        }
+
+        switchOnlyMusic.isChecked = prefs.onlyWhenMusic
+        switchOnlyMusic.setOnCheckedChangeListener { _, checked ->
+            prefs.onlyWhenMusic = checked
+            prefs.appendLog(if (checked) "Blöcke nur bei laufender Musik" else "Blöcke auch ohne Musik")
         }
 
         findViewById<View>(R.id.btnExactAlarm).setOnClickListener { openExactAlarmSettings() }

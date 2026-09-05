@@ -25,6 +25,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_WEEKDAYS, true)
         set(value) = sp.edit().putBoolean(KEY_WEEKDAYS, value).apply()
 
+    /** Sendeplan-Bloecke nur spielen, wenn gerade Musik laeuft. Test-Buttons spielen immer. */
+    var onlyWhenMusic: Boolean
+        get() = sp.getBoolean(KEY_ONLY_MUSIC, true)
+        set(value) = sp.edit().putBoolean(KEY_ONLY_MUSIC, value).apply()
+
     val log: String
         get() = sp.getString(KEY_LOG, "") ?: ""
 
@@ -40,6 +45,7 @@ class Prefs(context: Context) {
         private const val KEY_MODE = "mode"
         private const val KEY_SCHEDULE = "schedule_enabled"
         private const val KEY_WEEKDAYS = "weekdays_only"
+        private const val KEY_ONLY_MUSIC = "only_when_music"
         private const val KEY_LOG = "log"
         private const val MAX_LOG_LINES = 40
         private val LOG_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM. HH:mm:ss")

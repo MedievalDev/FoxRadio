@@ -223,6 +223,14 @@
                     android:text="@string/switch_weekdays"
                     android:textColor="?attr/colorOnSurface" />
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchOnlyMusic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/switch_only_music"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <TextView
                     style="@style/Text.Hint"
                     android:layout_width="match_parent"

@@ -26,7 +26,8 @@
     <string name="section_schedule">Sendeplan</string>
     <string name="switch_schedule">Sendeplan aktiv</string>
     <string name="switch_weekdays">Nur Montag bis Freitag</string>
-    <string name="schedule_hint">07:00 Morning Show, danach stündlich bis 16:00.</string>
+    <string name="switch_only_music">Nur wenn Musik läuft</string>
+    <string name="schedule_hint">07:00 Morning Show, danach stündlich bis 16:00. Läuft gerade nichts, wird der Block übersprungen. Die Test-Buttons spielen immer.</string>
 
     <string name="section_permissions">Berechtigungen</string>
     <string name="perm_exact">Exakte Wecker</string>
