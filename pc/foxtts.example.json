@@ -24,13 +24,17 @@
       "mode": "clone",
       "model_size": "1.7B",
       "ref_audio": "voices/a_ref.wav",
-      "ref_text": "Transkript der Referenz, exakt wie gesprochen"
+      "ref_text": "Transkript der Referenz, exakt wie gesprochen",
+      "temperature": 0.6,
+      "top_k": 30
     },
     "B": {
       "mode": "clone",
       "model_size": "1.7B",
       "ref_audio": "voices/b_ref.wav",
-      "ref_text": "Transkript der Referenz, exakt wie gesprochen"
+      "ref_text": "Transkript der Referenz, exakt wie gesprochen",
+      "temperature": 0.6,
+      "top_k": 30
     }
   },
   "pause_ms": 350,
@@ -46,7 +50,7 @@
   "music": {
     "enabled": true,
     "dir": "music",
-    "gain_db": -20.0,
+    "gain_db": -27.0,
     "fade_s": 0.4,
     "lead_s": 0.8,
     "tail_s": 1.5,

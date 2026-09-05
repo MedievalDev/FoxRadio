@@ -285,24 +285,35 @@ def worker(cfg):
         basis = int(seed) if seed is not None and int(seed) >= 0 else 20260905
         torch.manual_seed(basis + versuch)
         torch.cuda.manual_seed_all(basis + versuch)
+        # Das Modell wuerfelt laut generation_config (do_sample true, temperature 0.9).
+        # Dadurch klingt jede Zeile ein wenig anders, was ueber eine ganze Sendung
+        # wie wechselnde Sprecher wirkt. Erster Versuch deshalb ohne Wuerfeln;
+        # erst wenn die Laenge nicht stimmt, darf gewuerfelt werden, um aus einer
+        # Schleife herauszukommen.
+        # Ohne Wuerfeln verdoppelt das Modell ganze Saetze (gemessen: 10,9 s statt
+        # 5,3 s). Gewuerfelt wird also immer, aber kuehler als die 0,9 aus der
+        # generation_config - die sind der Grund, warum die Stimme von Zeile zu
+        # Zeile driftet. Bei Fehlschlaegen wird schrittweise waermer, damit eine
+        # haengende Zeile noch einen anderen Weg findet.
+        temp = min(0.95, float(job.get("temperature", 0.45)) + 0.2 * versuch)
+        gen = {"do_sample": True, "subtalker_dosample": True, "max_new_tokens": deckel,
+               "temperature": temp, "subtalker_temperature": temp,
+               "top_k": int(job.get("top_k", 30)), "subtalker_top_k": int(job.get("top_k", 30))}
         xvec = False
         if mode == "design":
             m = modell("VoiceDesign", "1.7B")             # Design gibt es nur als 1.7B
-            wavs, sr = m.generate_voice_design(text=text, instruct=job["instruct"], language=lang,
-                                               max_new_tokens=deckel)
+            wavs, sr = m.generate_voice_design(text=text, instruct=job["instruct"], language=lang, **gen)
         elif mode == "custom":
             m = modell("CustomVoice", groesse)
             extra = {"instruct": job["instruct"]} if job.get("instruct") else {}
-            wavs, sr = m.generate_custom_voice(text=text, speaker=job["speaker"], language=lang,
-                                               max_new_tokens=deckel, **extra)
+            wavs, sr = m.generate_custom_voice(text=text, speaker=job["speaker"], language=lang, **gen, **extra)
         elif mode == "clone":
             m = modell("Base", groesse)
             # ICL (mit Referenztext) klingt lebendig, entgleist aber gelegentlich;
             # nach drei Fehlschlaegen nur noch der Sprechervektor.
             xvec = versuch >= 3 or not job.get("ref_text")
             wavs, sr = m.generate_voice_clone(text=text, language=lang,
-                                              voice_clone_prompt=klon_prompt(m, job, xvec),
-                                              max_new_tokens=deckel)
+                                              voice_clone_prompt=klon_prompt(m, job, xvec), **gen)
         else:
             raise ValueError(f"unbekannter mode {mode!r}")
         audio = np.asarray(wavs[0], dtype=np.float32).squeeze()
