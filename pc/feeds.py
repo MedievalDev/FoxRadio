@@ -356,6 +356,8 @@ def main(argv=None):
     sub.add_parser("weather")
     args = p.parse_args(argv)
     cfg = load_config()
+    # Umlaute auch bei Umleitung in eine Datei als UTF-8 (Windows-Konsole ist cp1252)
+    sys.stdout.reconfigure(encoding="utf-8")
     if args.cmd == "check":
         ok = True
         for src in cfg["sources"]:

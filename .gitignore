@@ -13,3 +13,5 @@ __pycache__/
 *.pyc
 pc/night.json
 pc/writer.json
+pc/music/
+pc/voices/*.wav

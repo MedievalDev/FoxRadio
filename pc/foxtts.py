@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-FoxRadio TTS-Renderer: rendert Dialogzeilen über die ComfyUI-API (Qwen3-TTS)
-und schneidet sie zu einem Block zusammen.
+FoxRadio TTS-Renderer: rendert Dialogzeilen mit Qwen3-TTS und schneidet sie
+zu einem Block zusammen, mit leisem Musikbett darunter.
+
+Zwei Backends (foxtts.json, "backend"):
+    direct  Qwen3-TTS direkt aus dem ComfyUI-Ordner, in einem eigenen
+            Arbeitsprozess mit der isolierten transformers-4.57-Umgebung
+            (qwen_tts_env). Standard, weil der ComfyUI-Node mit dem
+            transformers 5.9 von ComfyUI nicht rendert (Stand 09/2026).
+    comfy   ueber die ComfyUI-API mit exportierten Workflows je Stimme.
 
 Läuft am besten mit der eingebetteten Python von ComfyUI, weil dort PyAV
 (Dekodieren von FLAC/MP3, Schreiben von MP3) und numpy schon dabei sind:
@@ -15,21 +22,34 @@ Befehle:
     line -v A -t "Text" -o out.wav  Eine Zeile rendern
     voice-design <workflow.json> -o ref_a.wav   Referenzstimme aus einer Design-Vorlage erzeugen
     block <script.txt> -o out.mp3   Dialog-Skript rendern und zusammenschneiden
+    worker                          (intern) Arbeitsprozess des direct-Backends
+
+Stimmen im direct-Backend (foxtts.json, "voices"):
+    {"mode": "design", "instruct": "Beschreibung", "seed": 123}   Stimme aus Beschreibung
+    {"mode": "clone", "ref_audio": "voices/a_ref.wav", "ref_text": "Transkript"}
+    {"mode": "custom", "speaker": "Ryan"}                         feste englische Sprecher
+Fuer eine ueber hunderte Zeilen gleichbleibende Stimme: einmal mit "design"
+eine Referenz rendern (line -v A_design ...), dann "clone" mit dieser Datei.
 
 Skriptformat (block): eine Zeile pro Sprecher, "A: Text" oder "B: Text".
 Leerzeile = längere Pause. Zeilen mit # sind Kommentare.
 
 Konfiguration: foxtts.json neben diesem Skript (siehe foxtts.example.json).
-Pro Stimme ein Workflow, in ComfyUI über "Save (API Format)" exportiert.
-Das Skript ersetzt darin nur den Text des TTS-Knotens.
+Beim comfy-Backend pro Stimme ein Workflow ("Save (API Format)"), das Skript
+ersetzt darin nur den Text des TTS-Knotens.
 """
 
 import argparse
+import atexit
 import copy
+import glob
 import json
 import os
+import queue
+import random
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -52,6 +72,23 @@ DEFAULTS = {
     "sample_rate": 24000,
     "mp3_bitrate": "96k",
     "work_dir": os.path.join(HERE, "work"),
+    "backend": "direct",
+    "direct": {
+        "python": r"C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe",
+        "root": r"C:\Users\marco\Desktop\ComfyUI_windows_portable",
+        "language": "German",
+        "log": "",
+    },
+    # Leises Musikbett unter jedem Block. Dateien (mp3/wav/flac/ogg) in
+    # music/, eine wird je Block zufaellig gewaehlt. Ohne Dateien kein Bett.
+    "music": {
+        "enabled": True,
+        "dir": os.path.join(HERE, "music"),
+        "gain_db": -20.0,
+        "fade_s": 2.0,
+        "lead_s": 0.8,
+        "tail_s": 1.5,
+    },
 }
 
 TEXT_INPUT_NAMES = ("text", "target_text")
@@ -65,7 +102,11 @@ def load_config():
     cfg = dict(DEFAULTS)
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, encoding="utf-8") as f:
-            cfg.update(json.load(f))
+            eigen = json.load(f)
+        for key in ("direct", "music"):        # verschachtelte Teile ergaenzen, nicht ersetzen
+            if isinstance(eigen.get(key), dict):
+                eigen[key] = {**DEFAULTS[key], **eigen[key]}
+        cfg.update(eigen)
     else:
         log(f"Hinweis: keine {CONFIG_PATH}, benutze Standardwerte")
     return cfg
@@ -151,7 +192,168 @@ class Comfy:
         return dest
 
 
+# ----------------------------------------------------------------------------
+# direct-Backend: Qwen3-TTS ohne ComfyUI-Node
+# ----------------------------------------------------------------------------
+
+def worker(cfg):
+    """Laeuft als eigener Prozess in der ComfyUI-Python, aber mit der
+    isolierten transformers-4.57-Umgebung (qwen_tts_env) vor den
+    site-packages - Qwen3-TTS vertraegt das transformers 5.9 von ComfyUI
+    nicht. Liest je Zeile einen Auftrag als JSON von stdin, schreibt die
+    WAV und antwortet mit einer JSON-Zeile auf stdout. Alles andere, was
+    Modell und Bibliotheken reden, geht nach stderr."""
+    d = cfg["direct"]
+    root = d["root"]
+    sys.path.insert(0, os.path.join(root, "ComfyUI", "custom_nodes", "ComfyUI-QwenTTS"))
+    sys.path.insert(0, os.path.join(root, "qwen_tts_env"))
+    antworten = sys.stdout
+    sys.stdout = sys.stderr
+    import numpy as np
+    import soundfile as sf
+    import torch
+    import transformers
+    from qwen_tts import Qwen3TTSModel
+    if not transformers.__version__.startswith("4.57"):
+        print(f"WARNUNG: transformers {transformers.__version__} im Pfad, erwartet 4.57", file=sys.stderr)
+    models_dir = os.path.join(root, "ComfyUI", "models", "TTS", "Qwen3-TTS")
+    cache = {}
+
+    def modell(art, groesse):
+        key = (art, groesse)
+        if key not in cache:
+            pfad = os.path.join(models_dir, f"Qwen3-TTS-12Hz-{groesse}-{art}")
+            if not os.path.isdir(pfad):
+                raise FileNotFoundError(f"Modell fehlt: {pfad}")
+            t0 = time.time()
+            cache[key] = Qwen3TTSModel.from_pretrained(pfad, device_map="cuda:0", dtype=torch.bfloat16,
+                                                       attn_implementation=d.get("attention", "sdpa"))
+            print(f"[worker] {os.path.basename(pfad)} geladen in {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
+        return cache[key]
+
+    antworten.write(json.dumps({"ok": True, "bereit": True}) + "\n")
+    antworten.flush()
+    for raw in sys.stdin:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            job = json.loads(raw)
+            t0 = time.time()
+            mode = job.get("mode", "design")
+            groesse = job.get("model_size", "1.7B")
+            lang = job.get("language", "German")
+            seed = job.get("seed")
+            if seed is not None and int(seed) >= 0:
+                torch.manual_seed(int(seed))
+                torch.cuda.manual_seed_all(int(seed))
+            if mode == "design":
+                m = modell("VoiceDesign", "1.7B")       # Design gibt es nur als 1.7B
+                wavs, sr = m.generate_voice_design(text=job["text"], instruct=job["instruct"], language=lang)
+            elif mode == "custom":
+                m = modell("CustomVoice", groesse)
+                extra = {"instruct": job["instruct"]} if job.get("instruct") else {}
+                wavs, sr = m.generate_custom_voice(text=job["text"], speaker=job["speaker"], language=lang, **extra)
+            elif mode == "clone":
+                m = modell("Base", groesse)
+                wavs, sr = m.generate_voice_clone(
+                    text=job["text"], language=lang, ref_audio=job["ref_audio"],
+                    ref_text=job.get("ref_text") or None, x_vector_only_mode=not job.get("ref_text"))
+            else:
+                raise ValueError(f"unbekannter mode {mode!r}")
+            audio = np.asarray(wavs[0], dtype=np.float32).squeeze()
+            sf.write(job["out"], audio, sr)
+            antwort = {"ok": True, "out": job["out"], "secs": round(time.time() - t0, 2),
+                       "audio_s": round(len(audio) / sr, 2), "sr": sr}
+        except Exception as e:
+            antwort = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        antworten.write(json.dumps(antwort, ensure_ascii=False) + "\n")
+        antworten.flush()
+
+
+class DirectTTS:
+    """Haelt den Arbeitsprozess und reicht Zeilen durch. Das Modell bleibt
+    dort geladen, nur die erste Zeile zahlt die Ladezeit."""
+
+    def __init__(self, cfg):
+        d = cfg["direct"]
+        os.makedirs(cfg["work_dir"], exist_ok=True)
+        self.logpath = resolve_path(d["log"]) if d.get("log") else os.path.join(cfg["work_dir"], "qwen_worker.log")
+        self.logf = open(self.logpath, "a", encoding="utf-8")
+        self.logf.write(f"\n=== {time.strftime('%Y-%m-%d %H:%M:%S')} Arbeitsprozess gestartet ===\n")
+        self.logf.flush()
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+        self.proc = subprocess.Popen(
+            [d["python"], os.path.abspath(__file__), "worker"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.logf,
+            text=True, encoding="utf-8", bufsize=1, cwd=HERE, env=env)
+        self.language = d.get("language", "German")
+        self.timeout = cfg["render_timeout_s"]
+        self.n = 0
+        self.zeilen = queue.Queue()
+        threading.Thread(target=self._lesen, daemon=True).start()
+        antwort = self._antwort(cfg["start_timeout_s"])
+        if not antwort.get("bereit"):
+            raise RuntimeError(f"Arbeitsprozess meldet sich nicht richtig: {antwort}")
+        atexit.register(self.close)
+
+    def _lesen(self):
+        for line in self.proc.stdout:
+            self.zeilen.put(line)
+        self.zeilen.put(None)
+
+    def _antwort(self, timeout):
+        try:
+            line = self.zeilen.get(timeout=timeout)
+        except queue.Empty:
+            self.proc.kill()
+            raise TimeoutError(f"TTS-Arbeitsprozess antwortet nicht nach {timeout}s, siehe {self.logpath}")
+        if line is None:
+            raise RuntimeError(f"TTS-Arbeitsprozess ist abgebrochen, siehe {self.logpath}")
+        return json.loads(line)
+
+    def alive(self):
+        return self.proc.poll() is None
+
+    def render(self, voice, vcfg, text, dest_dir):
+        if not self.alive():
+            raise RuntimeError(f"TTS-Arbeitsprozess ist beendet, siehe {self.logpath}")
+        self.n += 1
+        os.makedirs(dest_dir, exist_ok=True)
+        out = os.path.join(dest_dir, f"{voice}_{self.n:04d}_{uuid.uuid4().hex[:6]}.wav")
+        job = {k: v for k, v in vcfg.items() if k != "workflow"}
+        job.update(text=text, out=out)
+        job.setdefault("language", self.language)
+        if job.get("ref_audio"):
+            job["ref_audio"] = resolve_path(job["ref_audio"])
+        t0 = time.time()
+        self.proc.stdin.write(json.dumps(job, ensure_ascii=False) + "\n")
+        self.proc.stdin.flush()
+        antwort = self._antwort(self.timeout)
+        if not antwort.get("ok"):
+            raise RuntimeError(f"TTS ({voice}): {antwort.get('error', '?')}")
+        return out, time.time() - t0
+
+    def close(self):
+        if self.proc.poll() is None:
+            try:
+                self.proc.stdin.close()
+                self.proc.wait(timeout=30)
+            except Exception:
+                self.proc.kill()
+        self.logf.close()
+
+
+_direct = None
+
+
 def ensure_running(cfg):
+    global _direct
+    if cfg.get("backend", "direct") == "direct":
+        if _direct is None or not _direct.alive():
+            log("Qwen3-TTS direkt (Arbeitsprozess starten)")
+            _direct = DirectTTS(cfg)
+        return _direct
     api = Comfy(cfg["comfy_url"])
     if api.alive():
         log("ComfyUI läuft")
@@ -245,6 +447,8 @@ def render_line(api, cfg, voice, text, dest_dir, vcfg=None):
     vcfg = vcfg or cfg["voices"].get(voice)
     if not vcfg:
         raise KeyError(f"Stimme '{voice}' nicht in foxtts.json (voices)")
+    if isinstance(api, DirectTTS):
+        return api.render(voice, vcfg, text, dest_dir)
     wf = copy.deepcopy(load_workflow(resolve_path(vcfg["workflow"])))
     nid, name = find_text_node(wf, vcfg)
     wf[nid]["inputs"][name] = text
@@ -344,6 +548,38 @@ def _bitrate_to_int(s):
     return int(float(s[:-1]) * 1000) if s.endswith("k") else int(s)
 
 
+def music_files(cfg):
+    m = cfg.get("music") or {}
+    if not m.get("enabled", True):
+        return []
+    d = resolve_path(m["dir"])
+    files = []
+    for ext in ("mp3", "wav", "flac", "ogg", "m4a"):
+        files += glob.glob(os.path.join(d, "*." + ext))
+    return sorted(files)
+
+
+def music_bed(cfg, sr, n, files):
+    """Liefert ein leises, ein- und ausgeblendetes Musikstueck mit n Samples
+    (float32, -1..1) und den Dateinamen. Laengere Stuecke starten an einer
+    zufaelligen Stelle, kuerzere werden wiederholt."""
+    import numpy as np
+    m = cfg["music"]
+    f = random.choice(files)
+    track = decode_audio(f, sr).astype(np.float32) / 32767.0
+    if len(track) < n:
+        track = np.tile(track, int(np.ceil(n / len(track))))
+    start = random.randint(0, len(track) - n)
+    track = track[start:start + n].copy()
+    track *= 10 ** (m["gain_db"] / 20)
+    fade = min(int(m["fade_s"] * sr), n // 2)
+    if fade > 0:
+        rampe = np.linspace(0.0, 1.0, fade, dtype=np.float32)
+        track[:fade] *= rampe
+        track[-fade:] *= rampe[::-1]
+    return track, os.path.basename(f)
+
+
 def parse_script(path):
     """Liefert Liste von ("line", voice, text) oder ("pause",)."""
     items = []
@@ -376,6 +612,11 @@ def render_block(cfg, script_path, out_path):
     sr = cfg["sample_rate"]
     silence = lambda ms: np.zeros(int(sr * ms / 1000), dtype=np.int16)
     parts, stats, total = [], [], 0.0
+    bett = music_files(cfg)
+    if not bett and (cfg.get("music") or {}).get("enabled", True):
+        log(f"Musikbett: keine Dateien in {resolve_path(cfg['music']['dir'])}, Block ohne Musik")
+    if bett:
+        parts.append(silence(cfg["music"]["lead_s"] * 1000))    # Musik laeuft kurz an
     n = 0
     for item in items:
         if item[0] == "pause":
@@ -386,7 +627,7 @@ def render_block(cfg, script_path, out_path):
         path, secs = render_line(api, cfg, voice, text, work)
         total += secs
         audio = decode_audio(path, sr)
-        if parts:
+        if n > 1:                                  # Pause zwischen den Zeilen, nicht vor der ersten
             parts.append(silence(cfg["pause_ms"]))
         start_s = sum(len(x) for x in parts) / sr
         parts.append(audio)
@@ -394,12 +635,20 @@ def render_block(cfg, script_path, out_path):
                       "audio_s": round(len(audio) / sr, 2), "start_s": round(start_s, 2),
                       "end_s": round(start_s + len(audio) / sr, 2), "file": os.path.basename(path)})
         log(f"[{n}/{len(lines)}] {voice}: {secs:5.1f}s Render, {len(audio)/sr:5.1f}s Audio, {len(text)} Zeichen")
+    musik = None
+    if bett:
+        parts.append(silence(cfg["music"]["tail_s"] * 1000))    # Musik klingt aus
     block = normalize(np.concatenate(parts))
+    if bett:
+        unterlage, musik = music_bed(cfg, sr, len(block), bett)
+        gemischt = block.astype(np.float32) / 32767.0 + unterlage
+        block = normalize((np.clip(gemischt, -1.0, 1.0) * 32767.0).astype(np.int16))
+        log(f"Musikbett: {musik}")
     write_audio(out_path, block, sr, cfg["mp3_bitrate"])
     dur = len(block) / sr
     summary = {"script": script_path, "out": out_path, "lines": len(lines), "audio_s": round(dur, 1),
                "render_s": round(total, 1), "realtime_factor": round(total / dur, 2) if dur else None,
-               "per_line": stats}
+               "music": musik, "per_line": stats}
     with open(os.path.splitext(out_path)[0] + ".json", "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
     log(f"Fertig: {out_path} ({dur:.1f}s Audio, {total:.1f}s Renderzeit, Faktor {summary['realtime_factor']})")
@@ -428,10 +677,19 @@ def main(argv=None):
     sd.add_argument("workflow")
     sd.add_argument("-o", "--out", required=True, help="Ziel-WAV, am besten im ComfyUI-Ordner input")
     sd.add_argument("-t", "--text", default=REFERENCE_TEXT)
+    sub.add_parser("worker")
     args = p.parse_args(argv)
     cfg = load_config()
 
+    if args.cmd == "worker":
+        worker(cfg)
+        return 0
     if args.cmd == "status":
+        if cfg.get("backend", "direct") == "direct":
+            d = cfg["direct"]
+            env_da = os.path.isdir(os.path.join(d["root"], "qwen_tts_env"))
+            print("Backend direct,", "qwen_tts_env da" if env_da else "qwen_tts_env FEHLT", "in", d["root"])
+            return 0 if env_da else 1
         api = Comfy(cfg["comfy_url"])
         print("läuft" if api.alive() else "nicht erreichbar", cfg["comfy_url"])
         return 0 if api.alive() else 1
