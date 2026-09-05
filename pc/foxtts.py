@@ -196,6 +196,27 @@ class Comfy:
 # direct-Backend: Qwen3-TTS ohne ComfyUI-Node
 # ----------------------------------------------------------------------------
 
+ZEICHEN_JE_SEKUNDE = 15.0      # deutsche Sprache: 12 bis 17 Zeichen je Sekunde
+STUECK_MAX = 120               # laengere Zeilen satzweise erzeugen
+
+
+def in_saetze(text):
+    """Teilt lange Zeilen an Satzenden. Kurze Eingaben sind der wirksamste
+    Schutz gegen die Schleife, sehr kurze Fetzen haengen am Nachbarn."""
+    text = " ".join(text.split())
+    if len(text) <= STUECK_MAX:
+        return [text]
+    import re
+    saetze = [t.strip() for t in re.split(r"(?<=[.!?])\s+", text) if t.strip()]
+    stuecke = []
+    for satz in saetze:
+        if stuecke and (len(satz) < 20 or len(stuecke[-1]) + 1 + len(satz) <= STUECK_MAX):
+            stuecke[-1] += " " + satz
+        else:
+            stuecke.append(satz)
+    return stuecke or [text]
+
+
 def worker(cfg):
     """Laeuft als eigener Prozess in der ComfyUI-Python, aber mit der
     isolierten transformers-4.57-Umgebung (qwen_tts_env) vor den
@@ -231,6 +252,57 @@ def worker(cfg):
             print(f"[worker] {os.path.basename(pfad)} geladen in {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
         return cache[key]
 
+    # Klon-Prompts je Stimme einmal bauen und fuer alle Zeilen wiederverwenden
+    # (Skill qwen3-tts: das Kodieren der Referenz ist der teure Teil).
+    prompts = {}
+
+    def klon_prompt(m, job, xvec):
+        key = (job["ref_audio"], job.get("ref_text") or "", xvec)
+        if key not in prompts:
+            prompts[key] = m.create_voice_clone_prompt(
+                ref_audio=job["ref_audio"], ref_text=None if xvec else job.get("ref_text"),
+                x_vector_only_mode=xvec)
+        return prompts[key]
+
+    def erzeuge(job, text, versuch):
+        """Ein Stueck Text erzeugen. Liefert (audio, sr, dauer, erwartet, ok, xvec)."""
+        mode = job.get("mode", "design")
+        groesse = job.get("model_size", "1.7B")
+        lang = job.get("language", "German")
+        erwartet = len(text) / ZEICHEN_JE_SEKUNDE
+        deckel = int(erwartet * 12.0 * 1.8) + 24          # 12 Token je Sekunde, ohne Deckel Schleife
+        seed = job.get("seed")
+        basis = int(seed) if seed is not None and int(seed) >= 0 else 20260905
+        torch.manual_seed(basis + versuch)
+        torch.cuda.manual_seed_all(basis + versuch)
+        xvec = False
+        if mode == "design":
+            m = modell("VoiceDesign", "1.7B")             # Design gibt es nur als 1.7B
+            wavs, sr = m.generate_voice_design(text=text, instruct=job["instruct"], language=lang,
+                                               max_new_tokens=deckel)
+        elif mode == "custom":
+            m = modell("CustomVoice", groesse)
+            extra = {"instruct": job["instruct"]} if job.get("instruct") else {}
+            wavs, sr = m.generate_custom_voice(text=text, speaker=job["speaker"], language=lang,
+                                               max_new_tokens=deckel, **extra)
+        elif mode == "clone":
+            m = modell("Base", groesse)
+            # ICL (mit Referenztext) klingt lebendig, entgleist aber gelegentlich;
+            # nach drei Fehlschlaegen nur noch der Sprechervektor.
+            xvec = versuch >= 3 or not job.get("ref_text")
+            wavs, sr = m.generate_voice_clone(text=text, language=lang,
+                                              voice_clone_prompt=klon_prompt(m, job, xvec),
+                                              max_new_tokens=deckel)
+        else:
+            raise ValueError(f"unbekannter mode {mode!r}")
+        audio = np.asarray(wavs[0], dtype=np.float32).squeeze()
+        dauer = len(audio) / sr
+        # Plausibel: 12 bis 17 Zeichen je Sekunde; das Doppelte ist eine Schleife,
+        # am Deckel kleben heisst abgeschnitten. Kurze Fetzen bekommen Luft.
+        ok = (0.35 * erwartet <= dauer <= max(2.0 * erwartet, erwartet + 1.5)
+              and dauer < 0.97 * deckel / 12.0)
+        return audio, sr, dauer, erwartet, ok, xvec
+
     antworten.write(json.dumps({"ok": True, "bereit": True}) + "\n")
     antworten.flush()
     for raw in sys.stdin:
@@ -240,31 +312,30 @@ def worker(cfg):
         try:
             job = json.loads(raw)
             t0 = time.time()
-            mode = job.get("mode", "design")
-            groesse = job.get("model_size", "1.7B")
-            lang = job.get("language", "German")
-            seed = job.get("seed")
-            if seed is not None and int(seed) >= 0:
-                torch.manual_seed(int(seed))
-                torch.cuda.manual_seed_all(int(seed))
-            if mode == "design":
-                m = modell("VoiceDesign", "1.7B")       # Design gibt es nur als 1.7B
-                wavs, sr = m.generate_voice_design(text=job["text"], instruct=job["instruct"], language=lang)
-            elif mode == "custom":
-                m = modell("CustomVoice", groesse)
-                extra = {"instruct": job["instruct"]} if job.get("instruct") else {}
-                wavs, sr = m.generate_custom_voice(text=job["text"], speaker=job["speaker"], language=lang, **extra)
-            elif mode == "clone":
-                m = modell("Base", groesse)
-                wavs, sr = m.generate_voice_clone(
-                    text=job["text"], language=lang, ref_audio=job["ref_audio"],
-                    ref_text=job.get("ref_text") or None, x_vector_only_mode=not job.get("ref_text"))
-            else:
-                raise ValueError(f"unbekannter mode {mode!r}")
-            audio = np.asarray(wavs[0], dtype=np.float32).squeeze()
+            teile, versuche, xvec_benutzt, warnungen = [], 0, False, []
+            sr = 24000
+            for stueck in in_saetze(job["text"]):
+                bestes = None
+                for versuch in range(5):
+                    versuche += 1
+                    audio, sr, dauer, erwartet, ok, xvec = erzeuge(job, stueck, versuch)
+                    if bestes is None or abs(dauer - erwartet) < abs(bestes[1] - erwartet):
+                        bestes = (audio, dauer, xvec)
+                    if ok:
+                        break
+                    print(f"[worker] verworfen (Versuch {versuch + 1}): {dauer:.1f}s statt ~{erwartet:.1f}s"
+                          f" fuer: {stueck[:60]}", file=sys.stderr, flush=True)
+                else:
+                    warnungen.append(f"unplausible Laenge nach 5 Versuchen: {stueck[:60]}")
+                if teile:
+                    teile.append(np.zeros(int(0.18 * sr), dtype=np.float32))
+                teile.append(bestes[0])
+                xvec_benutzt = xvec_benutzt or bestes[2]
+            audio = np.concatenate(teile)
             sf.write(job["out"], audio, sr)
             antwort = {"ok": True, "out": job["out"], "secs": round(time.time() - t0, 2),
-                       "audio_s": round(len(audio) / sr, 2), "sr": sr}
+                       "audio_s": round(len(audio) / sr, 2), "sr": sr, "stuecke": len(teile) // 2 + 1,
+                       "versuche": versuche, "xvec": xvec_benutzt, "warnungen": warnungen}
         except Exception as e:
             antwort = {"ok": False, "error": f"{type(e).__name__}: {e}"}
         antworten.write(json.dumps(antwort, ensure_ascii=False) + "\n")
@@ -332,6 +403,11 @@ class DirectTTS:
         antwort = self._antwort(self.timeout)
         if not antwort.get("ok"):
             raise RuntimeError(f"TTS ({voice}): {antwort.get('error', '?')}")
+        if antwort.get("versuche", 1) > antwort.get("stuecke", 1) or antwort.get("xvec"):
+            log(f"  {voice}: {antwort.get('versuche')} Versuche fuer {antwort.get('stuecke')} Stueck(e)"
+                + (", Rueckfall auf Sprechervektor" if antwort.get("xvec") else ""))
+        for w in antwort.get("warnungen") or []:
+            log(f"  WARNUNG {voice}: {w}")
         return out, time.time() - t0
 
     def close(self):
