@@ -1,0 +1,14 @@
+{
+  "comfy_url": "http://127.0.0.1:8188",
+  "comfy_bat": "C:\\Users\\marco\\Desktop\\ComfyUI_windows_portable\\run_nvidia_gpu.bat",
+  "start_timeout_s": 240,
+  "render_timeout_s": 600,
+  "voices": {
+    "A": { "workflow": "voices/a.json" },
+    "B": { "workflow": "voices/b.json" }
+  },
+  "pause_ms": 350,
+  "paragraph_pause_ms": 800,
+  "sample_rate": 24000,
+  "mp3_bitrate": "96k"
+}

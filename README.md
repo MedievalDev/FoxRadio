@@ -48,6 +48,34 @@ die Blöcke nicht zuverlässig:
 6. Das Protokoll unten in der App zeigt, was passiert ist: Wecker ausgelöst,
    Audio Focus erhalten, Fehler.
 
+## PC-Seite: Stimmen rendern (Phase 2)
+
+`pc/foxtts.py` rendert Dialogzeilen über die ComfyUI-API mit Qwen3-TTS und
+schneidet sie zu einem Block. Läuft mit der eingebetteten Python von ComfyUI,
+weil dort PyAV und numpy schon dabei sind:
+
+```
+cd FoxRadio
+copy pc\foxtts.example.json pc\foxtts.json
+C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe pc\foxtts.py status
+```
+
+Einrichtung:
+1. In ComfyUI den Dev-Modus einschalten (Einstellungen), pro Stimme einen
+   Workflow bauen: Qwen3-TTS-Knoten (Voice Design oder Voice Clone) plus
+   SaveAudio. Über "Save (API Format)" als `pc/voices/a.json` und
+   `pc/voices/b.json` speichern.
+2. `python pc\foxtts.py probe pc\voices\a.json` zeigt die Knoten und welcher
+   Text-Eingang ersetzt wird. Erkennt er den falschen, in `foxtts.json` bei
+   der Stimme `text_node` und `text_input` setzen.
+3. `python pc\foxtts.py block pc\scripts\testdialog.txt -o work\test.mp3`
+   rendert den Testdialog. Daneben entsteht `test.json` mit Renderzeit pro
+   Zeile und dem Echtzeitfaktor, das ist die Messung für die Modellwahl.
+
+Das Skript startet ComfyUI über `run_nvidia_gpu.bat`, wenn die API nicht
+antwortet. Skriptformat: `A: Text`, `B: Text`, Leerzeile ist eine längere
+Pause, `#` ist Kommentar.
+
 ## Projekt
 
 - `app/src/main/java/de/alchemyfox/foxradio/`
@@ -59,4 +87,6 @@ die Blöcke nicht zuverlässig:
   - `MainActivity` Test-Buttons, Modus, Sendeplan, Berechtigungen, Protokoll
 - Build: Gradle 8.14.5, Android Gradle Plugin 8.13.2, Kotlin 2.3.21,
   compileSdk 35, minSdk 26.
+- `pc/foxtts.py` ComfyUI-Client, Schnitt, MP3. `pc/scripts/` Dialog-Skripte,
+  `pc/voices/` Workflows pro Stimme (nicht im Repo bis sie stehen)
 - CI: `.github/workflows/android.yml`

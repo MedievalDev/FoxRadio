@@ -7,7 +7,9 @@ während der Arbeit.
 Stand: 2026-09-05 — Phase 1 bestanden: Die Android-App legt den Testblock
 über YouTube Music, auch bei gesperrtem Handy aus dem Hintergrund (Mi 10T
 Lite 5G). Entscheidungen vom 2026-09-05 sind in Abschnitt 7 eingetragen.
-Nächster Schritt: Phase 2, Stimmen in ComfyUI.
+Phase 2 vorbereitet: Render-Skript `pc/foxtts.py` steht und ist gegen einen
+Mock-Server getestet. Offen ist der Teil am PC: Workflows in ComfyUI bauen,
+Stimmen anhören, Renderzeit messen.
 
 ---
 
@@ -57,7 +59,9 @@ keine Kontrolle über die fremde App hast.
 **Handy** — Android-App (Kotlin), Tasker wurde übersprungen:
 - zieht morgens die Playlist
 - lädt die Blöcke vor (kein Streaming, wegen Funklöchern in der Halle)
-- spielt sie zur passenden Zeit mit Audio Focus über die laufende Musik
+- spielt sie zur passenden Zeit mit Audio Focus über die laufende Musik,
+  aber nur wenn gerade Musik läuft, sonst wird der Block übersprungen
+- zeigt die Meldungen des Tages zusätzlich als Artikel zum Nachlesen
 
 Der Strato-VPS wird für dieses Projekt nicht gebraucht.
 
@@ -132,9 +136,14 @@ derselbe Sprecher den News-Teil nüchtern und den Gaming-Teil aufgeräumter.
 - Die nächtliche Routine-Session startet die BAT, wartet bis die API
   antwortet, schickt pro Sprecherzeile einen Workflow (`POST /prompt`),
   wartet über `/history` auf das Ergebnis und holt die WAV ab.
-- Welche Qwen3-TTS-Nodes installiert sind und welche Eingänge sie haben
-  (Text, Referenzaudio, Stil-Anweisung): in Phase 2 im laufenden ComfyUI
-  nachsehen. Ungeprüft.
+- Welches Node-Paket installiert ist, muss am PC geprüft werden. Bekannte
+  Pakete (Stand 09/2026): DarioFT/ComfyUI-Qwen3-TTS (Voice Design, Voice
+  Clone, Prompt Maker zum Wiederverwenden der Stimme), 1038lab/ComfyUI-QwenTTS,
+  flybirdxx/ComfyUI-Qwen-TTS (hat zusätzlich Dialogue-Node mit Rollen).
+  Der Text-Eingang heißt je nach Paket `text` oder `target_text`, das Skript
+  erkennt beides.
+- Ausgabe über den ComfyUI-Knoten SaveAudio (FLAC) oder SaveAudioAdvanced,
+  das Skript dekodiert mit PyAV und schneidet selbst.
 
 **Produktionsmenge:** Zwei Stimmen im Dialog heißt, jede Zeile wird einzeln
 gerendert und danach zusammengeschnitten. Eine Morning Show sind 30–50
@@ -225,6 +234,12 @@ Ziel: Ein Tag läuft ohne Handgriff.
 **Phase 5 — App ausbauen**
 Playlist von alchemy-fox.de ziehen, Blöcke morgens vorladen, pro Slot die
 passende Datei statt des Testblocks, Fallback wenn nichts Neues da ist.
+Dazu die Artikelansicht: Die Nachtproduktion legt neben den Audio-Blöcken
+eine `articles.json` ab (Titel, Kurztext, Quelle mit Link, Bild-URL,
+Rubrik, zugehöriger Block). Die App zeigt eine "Heute"-Liste mit Karten,
+Bild oben, Rubrik-Farbe, und eine Artikelseite. Bilder werden mit den
+Blöcken vorgeladen. Bilder kommen aus dem Artikel (og:image des Feeds),
+kein eigenes Rendern.
 
 **Phase 6 — Feinschliff**
 Morning Show ausbauen, Monitoring (Nachricht aufs Handy wenn der Nachtlauf

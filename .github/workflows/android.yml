@@ -5,6 +5,7 @@ on:
     branches: ["**"]
     paths-ignore:
       - "docs/**"
+      - "pc/**"
       - "**/*.md"
   workflow_dispatch:
 
