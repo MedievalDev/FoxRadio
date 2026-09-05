@@ -203,7 +203,7 @@ der Rest. Offene Entscheidung. Die Uhrzeit spricht die App schon jetzt live
 - [x] Die zwei Stimmen definieren und gegeneinander testen → A sachlicher Mann, B
       warme Frau, beide Design plus Clone (2026-09-05), Abnahme durch Marco offen
 - [ ] Qwen3-TTS 0.6B oder 1.7B — Qualität gegen Renderzeit abwägen
-- [ ] Wake-on-RTC im BIOS statt SwitchBot? Zuverlässiger, falls das Board es kann
+- [x] Aufwachen: SwitchBot drückt um 00:50 den Einschalter, Aufgabe läuft um 01:00 (2026-09-05)
 - [ ] Was passiert, wenn der Nachtlauf fehlschlägt — alte Blöcke oder Stille?
 - [ ] Wecker-Variante: `setExactAndAllowWhileIdle` (aktuell) oder `setAlarmClock`,
       falls MIUI Wecker verschluckt

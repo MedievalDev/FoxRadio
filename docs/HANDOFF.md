@@ -4,8 +4,8 @@ Stand 2026-09-05, mittags. Aus der Cloud gebaut: App komplett (Overlay,
 Sendeplan, Sync, Artikel), PC-Pipeline gegen Mock-Server. Am PC seitdem
 erledigt: Feeds, Stimmen (abgenommen), Webspace, echter Lauf mit Upload,
 Aufgabe um 01:00 mit Shutdown, Live-Wetter in der App (Build 8). Offen:
-Handy einrichten (Schritt 6), Musik nach `pc\music\`, Aufwachen um 01:00
-(BIOS oder SwitchBot). Reihenfolge einhalten, jeder Schritt ist für sich prüfbar.
+Handy einrichten (Schritt 6), Musik nach `pc\music\`, Aufwachen ist geregelt: SwitchBot drückt um 00:50 den
+Einschalter. Reihenfolge einhalten, jeder Schritt ist für sich prüfbar.
 
 ```
 set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
@@ -114,7 +114,7 @@ Protokoll in der App zeigt, was der Wecker gemacht hat.
   täglich 01:00 (Marco ist um vier oft schon am PC), `pc\night.bat`, Benutzer
   marco, nur bei Anmeldung, "Computer aufwecken" an, Zeitlimit drei Stunden.
   ComfyUI wird nicht mehr gebraucht, nur die GPU.
-- Wake-on-RTC im BIOS oder SwitchBot, damit der PC um 01:00 überhaupt an ist.
+- Aufwachen: SwitchBot drückt um 00:50 den Einschalter, zehn Minuten Vorlauf für Boot und Anmeldung.
 - `"shutdown": true` steht seit dem sauberen Lauf in `night.json` (120 s Vorlauf).
 - Optional `"ntfy_topic"` setzen und die ntfy-App am Handy abonnieren.
 
