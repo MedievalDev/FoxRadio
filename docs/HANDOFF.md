@@ -114,8 +114,9 @@ Protokoll in der App zeigt, was der Wecker gemacht hat.
 
 ## Offen und Annahmen
 
-- Wetter kommt aus dem Nachtlauf, also von 01:00. Live-Wetter am Handy
-  bleibt Option.
+- Wetter: kein Wetter mehr in den Skripten. Die App holt es vor jedem Block
+  von Open-Meteo und spricht es mit der Android-Stimme (Schalter "Live-Wetter",
+  `Weather.kt`); ohne Netz gilt der letzte Stand bis drei Stunden, sonst entfällt es.
 - Sendetage Mo bis Fr, in der App umschaltbar. Der Nachtlauf läuft jeden
   Tag, an dem die Aufgabe feuert.
 - Feed-Auswahl und Rubrik-Zuteilung in `writer.plan_blocks` sind ein
