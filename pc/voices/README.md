@@ -10,5 +10,7 @@ Neue Stimme: Beschreibung und Seed unter `X_design` in `foxtts.json`, Referenz
 rendern, anhoeren, dann `X` als clone darauf zeigen lassen.
 
 Nur fuer das comfy-Backend: hier laegen die Workflows pro Stimme (`a.json`,
-`b.json`), exportiert aus ComfyUI ueber "Save (API Format)". Pruefen mit
-`python foxtts.py probe voices/a.json`.
+`b.json`, nicht im Repo), exportiert aus ComfyUI ueber "Save (API Format)".
+Fertige Vorlagen fuer die gaengigen Qwen3-TTS-Node-Pakete liegen in
+`templates/`, Anleitung dort. Pruefen mit `python foxtts.py probe voices/a.json`,
+Referenz rendern mit `python foxtts.py voice-design`.

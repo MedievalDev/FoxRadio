@@ -58,21 +58,38 @@ def load_config():
 # ----------------------------------------------------------------------------
 
 class Uploader:
-    """method: none | dir (Kopie in einen Ordner) | ftp (FTP mit TLS wenn möglich)."""
+    """method: none | dir (Kopie in einen Ordner) | sftp (SSH, Strato) | ftp (FTP mit TLS).
+
+    sftp braucht paramiko in der Python, mit der night.py laeuft. Der
+    ftp-Zweig faellt nicht mehr still auf unverschluesseltes FTP zurueck,
+    nur mit "allow_plain": true."""
 
     def __init__(self, cfg):
         self.cfg = cfg
         self.ftp = None
+        self.sftp = None
+        self.transport = None
 
     def __enter__(self):
         m = self.cfg["method"]
-        if m == "ftp":
+        if m == "sftp":
+            import paramiko
+            host, user, pw = self.cfg["host"], self.cfg["user"], self.cfg["password"]
+            self.transport = paramiko.Transport((host, int(self.cfg.get("port", 22))))
+            self.transport.banner_timeout = 60
+            self.transport.connect(username=user, password=pw)
+            self.sftp = paramiko.SFTPClient.from_transport(self.transport)
+            self.remote_dir = self.cfg.get("remote_dir", "/").rstrip("/")
+            self._sftp_mkdirs(self.remote_dir)
+        elif m == "ftp":
             host, user, pw = self.cfg["host"], self.cfg["user"], self.cfg["password"]
             try:
                 self.ftp = ftplib.FTP_TLS(host, timeout=60)
                 self.ftp.login(user, pw)
                 self.ftp.prot_p()
             except Exception:
+                if not self.cfg.get("allow_plain"):
+                    raise
                 self.ftp = ftplib.FTP(host, timeout=60)
                 self.ftp.login(user, pw)
             self.ftp.cwd(self.cfg.get("remote_dir", "/"))
@@ -84,6 +101,21 @@ class Uploader:
                 self.ftp.quit()
             except Exception:
                 pass
+        if self.sftp:
+            self.sftp.close()
+        if self.transport:
+            self.transport.close()
+
+    def _sftp_mkdirs(self, path):
+        cur = ""
+        for part in path.strip("/").split("/"):
+            if not part:
+                continue
+            cur += "/" + part
+            try:
+                self.sftp.stat(cur)
+            except IOError:
+                self.sftp.mkdir(cur)
 
     def _ftp_mkdirs(self, path):
         cur = self.ftp.pwd()
@@ -112,6 +144,11 @@ class Uploader:
                 self._ftp_mkdirs(d)
             with open(local, "rb") as f:
                 self.ftp.storbinary(f"STOR {remote}", f)
+            return
+        if m == "sftp":
+            ziel = self.remote_dir + "/" + remote.replace(os.sep, "/").lstrip("/")
+            self._sftp_mkdirs(ziel.rsplit("/", 1)[0])
+            self.sftp.put(local, ziel)
             return
         raise ValueError(f"unbekannte Upload-Methode {m}")
 
