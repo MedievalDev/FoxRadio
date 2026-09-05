@@ -26,7 +26,8 @@ alle Builds haben denselben Debug-Schlüssel. Die Versionsnummer unten in der
 App ist die Build-Nummer.
 
 Was die App macht:
-- **Sendeplan** 07:00 bis 16:00 zur vollen Stunde, Mo bis Fr (umschaltbar).
+- **Sendeplan** 07:00 bis 15:00, Zeiten aus der `playlist.json` des Tages
+  (auch halbe Stunden und 08:55 und 11:55), Mo bis Fr (umschaltbar).
   Spielt den vorgeladenen Block des Slots. Fehlt er oder läuft keine Musik,
   bleibt es still, mit Eintrag im Protokoll.
 - **Zwei Modi**: Fadeout plus Pause (Medienlautstärke stufenweise runter, Audio

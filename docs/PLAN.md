@@ -1,7 +1,8 @@
 # FoxRadio — Gesamtplan (Konzept B: Overlay)
 
 Persönliches Audio-Programm, das sich über beliebig laufende Musik legt.
-Morning Show mit zwei Stimmen, danach stündliche Blöcke. Sendezeit 07:00–16:00
+Morning Show mit zwei Stimmen, ein Tagesthema in Teilen bis zehn, danach
+Blöcke. Sendezeit 07:00–15:00
 während der Arbeit.
 
 Stand: 2026-09-05 — Alles, was ohne PC geht, ist gebaut: App mit Overlay,
@@ -68,18 +69,32 @@ Der Strato-VPS wird für dieses Projekt nicht gebraucht.
 ## 3. Sendeschema
 
 ```
-01:00  PC startet, Produktion läuft (Marco ist um vier oft schon wach)
+01:00  PC startet, Produktion läuft
 02:30  Upload fertig, PC fährt runter
-07:00  MORNING SHOW (10-15 Min, zwei Stimmen)
-08:00  Block
-09:00  Block
-...    stündlich
-15:00  Block
-16:00  Abschluss, kurz
+07:00  News + Tagesthema Teil 1        rund 5 Minuten
+07:30  Tagesthema Teil 2               rund 2 Minuten
+08:00  News + Teil 3                   rund 5 Minuten
+08:30  Tagesthema Teil 4               rund 2 Minuten
+08:55  News kurz + Teil 5              endet vor der Pause um neun
+09:30  Tagesthema Teil 6               rund 2 Minuten
+10:00  News + Teil 7, Abschluss        rund 5 Minuten
+11:00  News
+11:55  News kurz                       endet vor der Pause um zwölf
+13:00  News
+14:00  News + Tipp des Tages
+15:00  Tagesabschluss + Rezept des Tages, letzter Block
 ```
 
-Zehn Blöcke pro Tag. Die Morning Show ist der lange, die Stundenblöcke laufen
-bei 2–3 Minuten.
+Zwölf Blöcke pro Tag. Die Uhrzeiten stehen in der `playlist.json`, die App
+liest sie von dort. Kein Block um 16:00, weil um 15:45 Feierabend ist; 08:55
+und 11:55 enden vor den Pausen.
+
+Das Tagesthema läuft in sieben Teilen über den Vormittag und wechselt nach
+Wochentag: Montag ein neues Indie-Spiel, Dienstag ein Mod-Projekt, Mittwoch
+Engine und Technik, Donnerstag eine Spielreihe, Freitag Kickstarter oder
+Devlog. Am Wochenende Wochenzusammenfassung, bei einem großen Ereignis
+(Messe, Showcase, Studio-Event) eine Sondersendung, sonst eine Indie-Rotation
+mit zehn kurz vorgestellten Spielen.
 
 Entschieden: feste Uhrzeiten, in der App standardmäßig Montag bis Freitag
 (umschaltbar). Intervalle ab Arbeitsbeginn sind verworfen.
@@ -88,7 +103,18 @@ Entschieden: feste Uhrzeiten, in der App standardmäßig Montag bis Freitag
 
 ## 4. Rubriken
 
-**Morning Show (07:00)**
+Rubriken und Rollen: A (Mann, sachlich) macht Begrüßung, Spieleentwicklung,
+KI, das Tagesthema und den Tipp des Tages. B (Frau, mit Meinung) macht das
+Wetter als Drei-Tage-Übersicht, alle Gaming-News am Stück und das Rezept.
+Sprecher wechseln nur an Rubrikgrenzen, kein Wechselgespräch. Nicht ins
+Programm kommen rundenbasierte Spiele, Anime und japanischer Content, Film
+und Serie (`avoid` in `pc/writer.py`).
+
+Vor jeder Rubrik steht ein Jingle: Das Skript fordert ihn als Zeile `J: news`
+an, `foxtts.py` setzt `pc/jingles/news.wav` ein. Unter dem ganzen Block liegt
+leise ein Musikbett aus `pc/music/`.
+
+**Morning Show (07:00), alte Fassung**
 - Begrüßung, Datum, Uhrzeit, was heute ansteht
 - Wetter für Ellwangen
 - Gaming-News, die größte Meldung ausführlicher
