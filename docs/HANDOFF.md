@@ -57,7 +57,9 @@ braucht `pip install anthropic` in der ComfyUI-Python und `ANTHROPIC_API_KEY`.
 ## 4. Webspace
 
 Auf alchemy-fox.de einen Ordner `foxradio` anlegen, mit `.htaccess` und
-`.htpasswd` schützen (Basic Auth). FTP-Zugang in `pc\night.json` eintragen
+`.htpasswd` schützen (Basic Auth). Vorlage in `pc/webspace/htaccess.example`,
+Passwortdatei mit `pc/webspace/make_htpasswd.py` oder über den
+Verzeichnisschutz im Hosting-Panel. FTP-Zugang in `pc\night.json` eintragen
 (`night.example.json` als Vorlage, `remote_dir` ist dieser Ordner). Test:
 
 ```
