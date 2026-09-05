@@ -4,59 +4,89 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.widget.Button
-import android.widget.RadioGroup
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.materialswitch.MaterialSwitch
+import java.time.Duration
 import java.time.ZonedDateTime
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var prefs: Prefs
-    private lateinit var statusText: TextView
-    private lateinit var permText: TextView
+    private lateinit var statusLabel: TextView
+    private lateinit var statusTime: TextView
+    private lateinit var statusCountdown: TextView
+    private lateinit var statusWarning: TextView
+    private lateinit var modeGroup: MaterialButtonToggleGroup
+    private lateinit var modeHint: TextView
+    private lateinit var switchSchedule: MaterialSwitch
+    private lateinit var switchWeekdays: MaterialSwitch
+    private lateinit var dotExact: View
+    private lateinit var dotBattery: View
+    private lateinit var dotNotify: View
+    private lateinit var dotAutostart: View
     private lateinit var logText: TextView
-    private lateinit var switchSchedule: SwitchCompat
-    private lateinit var switchWeekdays: SwitchCompat
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val ticker = object : Runnable {
+        override fun run() {
+            refresh()
+            handler.postDelayed(this, TICK_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         prefs = Prefs(this)
 
-        statusText = findViewById(R.id.statusText)
-        permText = findViewById(R.id.permText)
-        logText = findViewById(R.id.logText)
+        statusLabel = findViewById(R.id.statusLabel)
+        statusTime = findViewById(R.id.statusTime)
+        statusCountdown = findViewById(R.id.statusCountdown)
+        statusWarning = findViewById(R.id.statusWarning)
+        modeGroup = findViewById(R.id.modeGroup)
+        modeHint = findViewById(R.id.modeHint)
         switchSchedule = findViewById(R.id.switchSchedule)
         switchWeekdays = findViewById(R.id.switchWeekdays)
+        dotExact = findViewById(R.id.dotExact)
+        dotBattery = findViewById(R.id.dotBattery)
+        dotNotify = findViewById(R.id.dotNotify)
+        dotAutostart = findViewById(R.id.dotAutostart)
+        logText = findViewById(R.id.logText)
 
-        findViewById<Button>(R.id.btnPlayNow).setOnClickListener {
+        findViewById<View>(R.id.btnPlayNow).setOnClickListener {
             prefs.appendLog("Test: sofort")
             PlaybackService.start(this, "manuell")
             refresh()
         }
 
-        findViewById<Button>(R.id.btnPlayIn2Min).setOnClickListener {
+        findViewById<View>(R.id.btnPlayIn2Min).setOnClickListener {
             Scheduler.scheduleTest(this, 2 * 60_000L)
             prefs.appendLog("Test in 2 Minuten geplant")
-            Toast.makeText(this, "In 2 Minuten. Handy sperren, Musik laufen lassen.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_test_scheduled, Toast.LENGTH_LONG).show()
             refresh()
         }
 
-        val modeGroup = findViewById<RadioGroup>(R.id.modeGroup)
         modeGroup.check(if (prefs.mode == InterruptMode.PAUSE) R.id.modePause else R.id.modeDuck)
-        modeGroup.setOnCheckedChangeListener { _, checkedId ->
+        updateModeHint()
+        modeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
             prefs.mode = if (checkedId == R.id.modePause) InterruptMode.PAUSE else InterruptMode.DUCK
+            updateModeHint()
         }
 
         switchSchedule.isChecked = prefs.scheduleEnabled
@@ -77,13 +107,19 @@ class MainActivity : AppCompatActivity() {
             refresh()
         }
 
-        findViewById<Button>(R.id.btnExactAlarm).setOnClickListener { openExactAlarmSettings() }
-        findViewById<Button>(R.id.btnBattery).setOnClickListener { openBatterySettings() }
-        findViewById<Button>(R.id.btnAutostart).setOnClickListener { openAutostartSettings() }
-        findViewById<Button>(R.id.btnClearLog).setOnClickListener {
+        findViewById<View>(R.id.btnExactAlarm).setOnClickListener { openExactAlarmSettings() }
+        findViewById<View>(R.id.btnBattery).setOnClickListener { openBatterySettings() }
+        findViewById<View>(R.id.btnNotify).setOnClickListener { openNotificationSettings() }
+        findViewById<View>(R.id.btnAutostart).setOnClickListener { openAutostartSettings() }
+        findViewById<View>(R.id.btnClearLog).setOnClickListener {
             prefs.clearLog()
             refresh()
         }
+
+        val versionName = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        }.getOrNull() ?: "?"
+        findViewById<TextView>(R.id.versionText).text = getString(R.string.version_fmt, versionName)
 
         requestNotificationPermission()
     }
@@ -91,38 +127,69 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (prefs.scheduleEnabled) Scheduler.sync(this)
-        refresh()
+        handler.removeCallbacks(ticker)
+        handler.post(ticker)
+    }
+
+    override fun onPause() {
+        handler.removeCallbacks(ticker)
+        super.onPause()
     }
 
     private fun refresh() {
-        val next = if (prefs.scheduleEnabled) {
-            Schedule.nextSlot(ZonedDateTime.now(), prefs.weekdaysOnly)
+        val now = ZonedDateTime.now()
+        val next = if (prefs.scheduleEnabled) Schedule.nextSlot(now, prefs.weekdaysOnly) else null
+        if (next != null) {
+            statusLabel.setText(R.string.status_label_next)
+            statusTime.text = next.format(Schedule.FMT)
+            statusCountdown.text = countdownText(Duration.between(now, next))
         } else {
-            null
+            statusLabel.setText(R.string.status_label_off)
+            statusTime.setText(R.string.status_off_time)
+            statusCountdown.setText(R.string.status_off_hint)
         }
-        statusText.text = buildString {
-            append(
-                if (next != null) getString(R.string.status_next_slot, next.format(Schedule.FMT))
-                else getString(R.string.status_schedule_off)
-            )
-            if (!Scheduler.canScheduleExact(this@MainActivity)) {
-                append('\n')
-                append(getString(R.string.status_no_exact_alarm))
-            }
-        }
+
+        val exactOk = Scheduler.canScheduleExact(this)
+        statusWarning.visibility = if (exactOk || next == null) View.GONE else View.VISIBLE
 
         val pm = getSystemService(PowerManager::class.java)
-        permText.text = listOf(
-            getString(R.string.perm_line_exact, okOrMissing(Scheduler.canScheduleExact(this))),
-            getString(R.string.perm_line_battery, okOrMissing(pm.isIgnoringBatteryOptimizations(packageName))),
-            getString(R.string.perm_line_notify, okOrMissing(NotificationManagerCompat.from(this).areNotificationsEnabled()))
-        ).joinToString("\n")
+        setDot(dotExact, exactOk)
+        setDot(dotBattery, pm.isIgnoringBatteryOptimizations(packageName))
+        setDot(dotNotify, NotificationManagerCompat.from(this).areNotificationsEnabled())
+        setDot(dotAutostart, null)
 
-        logText.text = prefs.log.lines().filter { it.isNotBlank() }.reversed().joinToString("\n")
+        val lines = prefs.log.lines().filter { it.isNotBlank() }.reversed()
+        logText.text = if (lines.isEmpty()) getString(R.string.log_empty) else lines.joinToString("\n")
     }
 
-    private fun okOrMissing(ok: Boolean): String =
-        getString(if (ok) R.string.perm_ok else R.string.perm_missing)
+    private fun countdownText(d: Duration): String {
+        val totalMinutes = d.toMinutes()
+        val days = totalMinutes / (24 * 60)
+        val hours = (totalMinutes % (24 * 60)) / 60
+        val minutes = totalMinutes % 60
+        return when {
+            days > 0 -> getString(R.string.countdown_days, days, hours)
+            hours > 0 -> getString(R.string.countdown_hours, hours, minutes)
+            minutes > 0 -> getString(R.string.countdown_minutes, minutes)
+            else -> getString(R.string.countdown_soon)
+        }
+    }
+
+    /** ok = true gruen, false rot, null grau (nicht pruefbar). */
+    private fun setDot(dot: View, ok: Boolean?) {
+        val color = when (ok) {
+            true -> R.color.fox_green
+            false -> R.color.fox_red
+            null -> R.color.fox_gray
+        }
+        dot.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, color))
+    }
+
+    private fun updateModeHint() {
+        modeHint.setText(
+            if (prefs.mode == InterruptMode.PAUSE) R.string.mode_pause_hint else R.string.mode_duck_hint
+        )
+    }
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
@@ -135,7 +202,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openExactAlarmSettings() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            Toast.makeText(this, "Auf dieser Android-Version nicht nötig.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.exact_alarm_not_needed, Toast.LENGTH_SHORT).show()
             return
         }
         startSafely(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
@@ -146,14 +213,24 @@ class MainActivity : AppCompatActivity() {
         if (!startSafely(direct)) startSafely(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
     }
 
+    private fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        if (!startSafely(intent)) openAppDetails()
+    }
+
     private fun openAutostartSettings() {
         val miui = Intent().setComponent(
             ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
         )
         if (!startSafely(miui)) {
             Toast.makeText(this, R.string.autostart_not_found, Toast.LENGTH_LONG).show()
-            startSafely(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            openAppDetails()
         }
+    }
+
+    private fun openAppDetails() {
+        startSafely(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
     }
 
     private fun startSafely(intent: Intent): Boolean = try {
@@ -161,5 +238,9 @@ class MainActivity : AppCompatActivity() {
         true
     } catch (e: Exception) {
         false
+    }
+
+    companion object {
+        private const val TICK_MS = 30_000L
     }
 }

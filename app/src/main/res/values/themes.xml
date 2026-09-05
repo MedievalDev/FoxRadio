@@ -1,8 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FoxRadio" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <style name="Theme.FoxRadio" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/fox_orange</item>
-        <item name="colorPrimaryDark">@color/fox_orange_dark</item>
-        <item name="colorAccent">@color/fox_orange</item>
+        <item name="colorOnPrimary">@color/fox_on_orange</item>
+        <item name="colorPrimaryContainer">@color/fox_orange_container</item>
+        <item name="colorOnPrimaryContainer">@color/fox_on_orange_container</item>
+        <item name="colorSecondary">@color/fox_amber</item>
+        <item name="colorSurface">@color/fox_surface</item>
+        <item name="colorOnSurface">@color/fox_on_surface</item>
+        <item name="colorSurfaceVariant">@color/fox_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/fox_on_surface_variant</item>
+        <item name="colorOutline">@color/fox_outline</item>
+        <item name="android:colorBackground">@color/fox_background</item>
+        <item name="colorOnBackground">@color/fox_on_surface</item>
+        <item name="android:statusBarColor">@color/fox_background</item>
+        <item name="android:navigationBarColor">@color/fox_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Text.Section" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="Text.Hint" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Card.Fox" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/fox_surface</item>
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
     </style>
 </resources>
