@@ -9,3 +9,5 @@ captures/
 .cxx/
 pc/work/
 pc/foxtts.json
+__pycache__/
+*.pyc

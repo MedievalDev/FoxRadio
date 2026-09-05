@@ -239,7 +239,10 @@ eine `articles.json` ab (Titel, Kurztext, Quelle mit Link, Bild-URL,
 Rubrik, zugehöriger Block). Die App zeigt eine "Heute"-Liste mit Karten,
 Bild oben, Rubrik-Farbe, und eine Artikelseite. Bilder werden mit den
 Blöcken vorgeladen. Bilder kommen aus dem Artikel (og:image des Feeds),
-kein eigenes Rendern.
+kein eigenes Rendern. Jeder Artikel hat einen Play-Button zum Nachhören:
+`articles.json` trägt pro Meldung Block-Datei, Startsekunde und Dauer, die
+das Render-Skript beim Schneiden aus den Zeilenlängen berechnet. Die App
+spielt dann genau diesen Abschnitt, ohne Overlay-Logik, einfach in der App.
 
 **Phase 6 — Feinschliff**
 Morning Show ausbauen, Monitoring (Nachricht aufs Handy wenn der Nachtlauf
