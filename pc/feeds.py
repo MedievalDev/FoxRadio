@@ -332,20 +332,44 @@ def weather(cfg):
         "latitude": w["latitude"], "longitude": w["longitude"],
         "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode",
         "hourly": "temperature_2m,weathercode",
-        "timezone": "Europe/Berlin", "forecast_days": 1,
+        "timezone": "Europe/Berlin", "forecast_days": 3,
     })
     data = json.loads(fetch("https://api.open-meteo.com/v1/forecast?" + q).decode("utf-8"))
     d = data["daily"]
     hourly = data.get("hourly", {})
     stunden = {}
     for t, temp, code in zip(hourly.get("time", []), hourly.get("temperature_2m", []), hourly.get("weathercode", [])):
-        stunden[t[11:16]] = {"temp": round(temp), "text": WEATHER_CODES.get(code, "wechselhaft")}
+        if t[:10] == d["time"][0]:
+            stunden[t[11:16]] = {"temp": round(temp), "text": WEATHER_CODES.get(code, "wechselhaft")}
+    # Drei Tage fuer die Uebersicht in der Morning Show: heute, morgen, uebermorgen
+    namen = ["heute", "morgen", "übermorgen"]
+    tage = []
+    for i, tag in enumerate(d["time"]):
+        regen = d["precipitation_probability_max"][i]
+        if regen is None:
+            tendenz = WEATHER_CODES.get(d["weathercode"][i], "wechselhaft")
+        elif regen < 20:
+            tendenz = "trocken"
+        elif regen < 50:
+            tendenz = "überwiegend trocken"
+        elif regen < 80:
+            tendenz = "zeitweise Regen"
+        else:
+            tendenz = "Regen"
+        wt = datetime.fromisoformat(tag).weekday()
+        tage.append({
+            "date": tag, "name": namen[i] if i < 3 else tag,
+            "weekday": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"][wt],
+            "tmin": round(d["temperature_2m_min"][i]), "tmax": round(d["temperature_2m_max"][i]),
+            "rain_prob": regen, "text": WEATHER_CODES.get(d["weathercode"][i], "wechselhaft"),
+            "tendenz": tendenz,
+        })
     return {
         "place": w["place"], "date": d["time"][0],
-        "tmax": round(d["temperature_2m_max"][0]), "tmin": round(d["temperature_2m_min"][0]),
-        "rain_prob": d["precipitation_probability_max"][0],
-        "text": WEATHER_CODES.get(d["weathercode"][0], "wechselhaft"),
+        "tmax": tage[0]["tmax"], "tmin": tage[0]["tmin"],
+        "rain_prob": tage[0]["rain_prob"], "text": tage[0]["text"],
         "hourly": stunden,
+        "days": tage,
     }
 
 

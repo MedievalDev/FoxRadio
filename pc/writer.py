@@ -34,8 +34,12 @@ DEFAULTS = {
     "morning_lines": [30, 45],
     "hour_lines": [8, 14],
     "closing_lines": [6, 10],
-    "speaker_a": "sachlich, führt durch die Sendung, macht Übergänge und nennt Uhrzeit und Rubrik",
-    "speaker_b": "lockerer, kommentiert kurz, bringt eine Meinung, ohne Floskeln",
+    # Feste Rollen je Rubrik. Kein Wechselgespraech: jede Stimme spricht ihre
+    # Rubrik am Stueck, die andere hoechstens mit einer kurzen Uebergabe.
+    "speaker_a": ("Mann, sachlich. Begrüßt, nennt Uhrzeit und Datum, macht die Entwickler- und KI-Themen, "
+                  "die Anthropic-Neuigkeiten und stellt das Indie-Spiel vor. Beendet den Block."),
+    "speaker_b": ("Frau, lockerer, mit eigener Meinung, ohne Floskeln. Macht in der Morning Show das Wetter "
+                  "als Drei-Tage-Übersicht und in jedem Block alle Gaming-News am Stück, sonst nichts."),
 }
 
 WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -129,29 +133,37 @@ def build_prompt(cfg, block, weather, day):
     lo, hi = cfg["morning_lines"] if block["kind"] == "morning" else (
         cfg["closing_lines"] if block["kind"] == "closing" else cfg["hour_lines"])
     hour = int(block["slot"][:2])
-    # Kein Wetter im Skript: die Bloecke entstehen nachts, das Handy sagt das
-    # aktuelle Wetter vor jedem Block selbst an (Weather.kt in der App).
-    w = "Das Wetter sagt das Handy vorher selbst an, also kein Wetter im Skript."
+    # Wetter nur als Drei-Tage-Uebersicht in der Morning Show (B). Das Stundenwetter
+    # waere um sieben schon Stunden alt, das sagt das Handy live an (Weather.kt).
+    w = ""
+    if weather and weather.get("days") and block["kind"] == "morning":
+        w = "Wetter " + weather["place"] + " für die Übersicht: " + " ".join(
+            f"{t['name'].capitalize()} ({t['weekday']}): {t['tmin']} bis {t['tmax']} Grad, {t['tendenz']}, {t['text']}."
+            for t in weather["days"][:3])
     news = "\n".join(
         f"- [{it['id']}] ({it['rubric']}, {it['source']}) {it['title']}\n  {it.get('summary') or ''}".rstrip()
         for it in block["items"]
     ) or "- (keine Meldungen, nur Uhrzeit und Wetter)"
 
     if block["kind"] == "morning":
-        struktur = ("1. Begrüßung, Datum, Uhrzeit, kurz was heute ansteht (2 bis 4 Zeilen)\n"
-                    "2. Gaming-News, die größte Meldung ausführlicher (je Meldung 3 bis 5 Zeilen)\n"
-                    "3. Entwickler- und KI-Themen (je 2 bis 4 Zeilen)\n"
-                    "4. Anthropic-Neuigkeiten, falls vorhanden (je 2 bis 3 Zeilen)\n"
-                    "5. Indie-RPG-Vorstellung (je 3 bis 4 Zeilen)\n"
-                    "6. Verabschiedung, Hinweis auf den nächsten Block um acht (1 bis 2 Zeilen)")
+        struktur = ("1. A: Begrüßung, Datum, Uhrzeit, kurz was heute ansteht, Übergabe an B (2 bis 4 Zeilen)\n"
+                    "2. B: Wetter als Drei-Tage-Übersicht in zwei bis drei Zeilen, Muster: heute zwölf bis 25 Grad, "
+                    "überwiegend trocken, morgen sonnig, 16 bis 22 Grad, übermorgen Regen (nur wenn Wetterdaten da sind)\n"
+                    "3. B: alle Gaming-News am Stück, die größte Meldung ausführlicher (je Meldung 3 bis 5 Zeilen), "
+                    "am Ende Übergabe zurück an A\n"
+                    "4. A: Entwickler- und KI-Themen (je 2 bis 4 Zeilen)\n"
+                    "5. A: Anthropic-Neuigkeiten, falls vorhanden (je 2 bis 3 Zeilen)\n"
+                    "6. A: Indie-Spiel vorstellen (je 3 bis 4 Zeilen)\n"
+                    "7. A: Verabschiedung, Hinweis auf den nächsten Block um acht (1 bis 2 Zeilen)")
     elif block["kind"] == "closing":
-        struktur = ("1. Uhrzeit, kurzer Tagesabschluss (2 Zeilen)\n"
-                    "2. Ein bis zwei Meldungen kurz (je 2 bis 3 Zeilen)\n"
-                    "3. Verabschiedung bis morgen (1 bis 2 Zeilen)")
+        struktur = ("1. A: Uhrzeit, kurzer Tagesabschluss (2 Zeilen)\n"
+                    "2. Gaming-Meldung durch B, alles andere durch A (je 2 bis 3 Zeilen)\n"
+                    "3. A: Verabschiedung bis morgen (1 bis 2 Zeilen)")
     else:
-        struktur = ("1. Uhrzeit, Rubrik ansagen (1 Zeile)\n"
-                    "2. Die Meldungen, je 2 bis 4 Zeilen\n"
-                    "3. Kurzer Abschluss mit Hinweis auf den nächsten Block (1 Zeile)")
+        struktur = ("1. A: Uhrzeit, was in diesem Block kommt (1 Zeile)\n"
+                    "2. B: die Gaming-Meldungen am Stück (je 2 bis 4 Zeilen), falls welche dabei sind\n"
+                    "3. A: Entwickler-, KI-, Anthropic- oder Indie-Meldungen (je 2 bis 4 Zeilen)\n"
+                    "4. A: kurzer Abschluss mit Hinweis auf den nächsten Block (1 Zeile)")
 
     return f"""Du schreibst ein kurzes Radioskript für FoxRadio, ein persönliches Programm für einen einzigen Hörer (Marco, Zerspanungsmechaniker, arbeitet meist in der Montage in einer Halle in Ellwangen und entwickelt nebenbei ein Rollenspiel mit Unreal Engine). Zwei Sprecher:
 A: {cfg['speaker_a']}
@@ -166,11 +178,11 @@ Struktur, genau in dieser Reihenfolge:
 {struktur}
 
 Regeln:
-- {lo} bis {hi} Zeilen insgesamt, Sprecher wechseln sich ab, A beginnt und beendet.
-- Deutsch, gesprochene Sprache, kurze Sätze. Der Text wird von einer Sprachsynthese vorgelesen: keine URLs, keine Abkürzungen, keine Sonderzeichen, keine Klammern, Zahlen bis zwölf als Wort.
-- Keine Floskeln wie "absolut", "spannend", "genau", "weißt du was". B kommentiert mit Substanz oder gar nicht.
-- Nicht jede Meldung braucht einen Kommentar von B.
-- Wenn eine Meldung unklar ist, lieber weglassen als raten.
+- {lo} bis {hi} Zeilen insgesamt. A beginnt und beendet.
+- Kein Wechselgespräch: Sprecher wechseln nur an Rubrikgrenzen. Innerhalb einer Rubrik spricht die zuständige Stimme alle Zeilen am Stück. Beim Rubrikwechsel höchstens eine kurze Übergabe (ein Satz), keine Rückfragen, kein Hin und Her.
+- Deutsch, gesprochene Sprache, kurze Sätze. Der Text wird von einer Sprachsynthese vorgelesen: keine URLs, keine Abkürzungen, keine Sonderzeichen, keine Klammern, keine Gedankenstriche, Zahlen bis zwölf als Wort.
+- Wenn eine Meldung unklar ist, lieber weglassen als raten. Nur genannte Fakten, keine Zahlen erfinden.
+- Kein Schreib-Slop: keine Kontraste der Art "nicht X, sondern Y"; keine Anläufe wie "Was viele nicht wissen", "Das Beste daran", "Ganz ehrlich"; kein Bedeutungsgetue wie "Meilenstein", "unterstreicht", "wegweisend", "zeigt einmal mehr"; keine unbenannten Quellen wie "Experten sind sich einig"; keine Fazit-Sätze am Ende ("Alles in allem", "Man darf gespannt sein"); keine tiefsinnigen Schlusspointen; kein Rotieren von Begriffen für dasselbe Ding; keine leeren Adverbien wie "absolut", "wirklich", "tatsächlich", "spannend". Fakten sagen, Wertung nur mit Begründung.
 
 Antworte nur mit JSON in dieser Form:
 {{"lines": [{{"speaker": "A", "text": "..."}}, ...],
