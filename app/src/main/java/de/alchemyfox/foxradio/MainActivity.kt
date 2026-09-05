@@ -13,6 +13,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,6 +42,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dotNotify: View
     private lateinit var dotAutostart: View
     private lateinit var logText: TextView
+    private lateinit var todayText: TextView
+    private lateinit var todayStatus: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
@@ -69,10 +72,12 @@ class MainActivity : AppCompatActivity() {
         dotNotify = findViewById(R.id.dotNotify)
         dotAutostart = findViewById(R.id.dotAutostart)
         logText = findViewById(R.id.logText)
+        todayText = findViewById(R.id.todayText)
+        todayStatus = findViewById(R.id.todayStatus)
 
         findViewById<View>(R.id.btnPlayNow).setOnClickListener {
             prefs.appendLog("Test: sofort")
-            PlaybackService.start(this, "manuell")
+            PlaybackService.start(this, "manuell", null)
             refresh()
         }
 
@@ -113,6 +118,34 @@ class MainActivity : AppCompatActivity() {
         switchOnlyMusic.setOnCheckedChangeListener { _, checked ->
             prefs.onlyWhenMusic = checked
             prefs.appendLog(if (checked) "Blöcke nur bei laufender Musik" else "Blöcke auch ohne Musik")
+        }
+
+        findViewById<View>(R.id.btnArticles).setOnClickListener {
+            startActivity(Intent(this, ArticlesActivity::class.java))
+        }
+        findViewById<View>(R.id.btnSync).setOnClickListener {
+            if (prefs.baseUrl.isBlank()) {
+                Toast.makeText(this, R.string.today_none, Toast.LENGTH_LONG).show()
+            } else {
+                prefs.appendLog("Sync: manuell gestartet")
+                SyncService.start(this)
+                Toast.makeText(this, R.string.toast_sync_started, Toast.LENGTH_SHORT).show()
+                refresh()
+            }
+        }
+
+        val editUrl = findViewById<EditText>(R.id.editUrl)
+        val editUser = findViewById<EditText>(R.id.editUser)
+        val editPass = findViewById<EditText>(R.id.editPass)
+        editUrl.setText(prefs.baseUrl)
+        editUser.setText(prefs.authUser)
+        editPass.setText(prefs.authPass)
+        findViewById<View>(R.id.btnSaveConnection).setOnClickListener {
+            prefs.baseUrl = editUrl.text.toString()
+            prefs.authUser = editUser.text.toString()
+            prefs.authPass = editPass.text.toString()
+            editUrl.setText(prefs.baseUrl)
+            Toast.makeText(this, R.string.toast_saved, Toast.LENGTH_SHORT).show()
         }
 
         findViewById<View>(R.id.btnExactAlarm).setOnClickListener { openExactAlarmSettings() }
@@ -166,8 +199,29 @@ class MainActivity : AppCompatActivity() {
         setDot(dotNotify, NotificationManagerCompat.from(this).areNotificationsEnabled())
         setDot(dotAutostart, null)
 
+        refreshToday()
+
         val lines = prefs.log.lines().filter { it.isNotBlank() }.reversed()
         logText.text = if (lines.isEmpty()) getString(R.string.log_empty) else lines.joinToString("\n")
+    }
+
+    private fun refreshToday() {
+        val lib = Library(this)
+        val playlist = lib.playlist()
+        val articles = lib.articles()?.second ?: emptyList()
+        if (playlist == null) {
+            todayText.setText(R.string.today_none)
+        } else {
+            todayText.text = getString(R.string.today_summary, playlist.first, playlist.second.size, articles.size)
+        }
+        val status = lib.status()
+        val parts = mutableListOf<String>()
+        if (status != null) {
+            parts += getString(if (status.ok) R.string.today_status_ok else R.string.today_status_fail, status.message)
+        }
+        if (prefs.lastSync.isNotBlank()) parts += getString(R.string.today_last_sync, prefs.lastSync)
+        todayStatus.text = parts.joinToString("\n")
+        todayStatus.visibility = if (parts.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun countdownText(d: Duration): String {

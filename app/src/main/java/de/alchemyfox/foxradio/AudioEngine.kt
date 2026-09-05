@@ -35,7 +35,8 @@ class AudioEngine(private val context: Context) {
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build()
 
-    suspend fun playBlock(source: String) {
+    /** file = vorgeladener Block (MP3), null = eingebauter Testblock (Chime + Uhrzeit). */
+    suspend fun playBlock(source: String, file: String? = null) {
         val mode = prefs.mode
         val stream = AudioManager.STREAM_MUSIC
         val maxVol = am.getStreamMaxVolume(stream)
@@ -46,7 +47,7 @@ class AudioEngine(private val context: Context) {
 
         prefs.appendLog("Block startet ($source, ${mode.name}, Musik ${if (musicWasPlaying) "läuft" else "aus"}, Vol $originalVol/$maxVol)")
 
-        val tts = TtsSpeaker(context, attrs)
+        val tts = if (file == null) TtsSpeaker(context, attrs) else null
         var volumeTouched = false
         var focus: AudioFocusRequest? = null
         try {
@@ -67,13 +68,17 @@ class AudioEngine(private val context: Context) {
                 volumeTouched = true
             }
 
-            playChime()
-            delay(200)
-            tts.speak(context.getString(R.string.tts_intro, spokenTime())) { prefs.appendLog(it) }
+            if (file != null) {
+                playFile(file)
+            } else {
+                playChime()
+                delay(200)
+                tts?.speak(context.getString(R.string.tts_intro, spokenTime())) { prefs.appendLog(it) }
+            }
             delay(300)
         } finally {
             withContext(NonCancellable) {
-                tts.shutdown()
+                tts?.shutdown()
                 if (fadeMusic && volumeTouched) {
                     am.setStreamVolume(stream, 0, 0)
                     abandonFocus(focus)
@@ -130,7 +135,15 @@ class AudioEngine(private val context: Context) {
         request?.let { am.abandonAudioFocusRequest(it) }
     }
 
-    private suspend fun playChime() = suspendCancellableCoroutine<Unit> { cont ->
+    private suspend fun playChime() = playSource { player ->
+        context.resources.openRawResourceFd(R.raw.chime).use { afd ->
+            player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+        }
+    }
+
+    private suspend fun playFile(path: String) = playSource { player -> player.setDataSource(path) }
+
+    private suspend fun playSource(setSource: (MediaPlayer) -> Unit) = suspendCancellableCoroutine<Unit> { cont ->
         val player = MediaPlayer()
         var finished = false
         fun finish() {
@@ -141,9 +154,7 @@ class AudioEngine(private val context: Context) {
         }
         try {
             player.setAudioAttributes(attrs)
-            context.resources.openRawResourceFd(R.raw.chime).use { afd ->
-                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            }
+            setSource(player)
             player.setOnCompletionListener { finish() }
             player.setOnErrorListener { _, what, extra ->
                 prefs.appendLog("Chime-Fehler $what/$extra")
@@ -154,7 +165,7 @@ class AudioEngine(private val context: Context) {
             player.prepare()
             player.start()
         } catch (e: Exception) {
-            prefs.appendLog("Chime konnte nicht starten: ${e.message}")
+            prefs.appendLog("Wiedergabe konnte nicht starten: ${e.message}")
             finish()
         }
     }

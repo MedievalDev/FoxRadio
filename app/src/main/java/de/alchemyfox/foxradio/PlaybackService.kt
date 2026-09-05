@@ -42,10 +42,11 @@ class PlaybackService : Service() {
         }
 
         val source = intent?.getStringExtra(EXTRA_SOURCE) ?: "unbekannt"
+        val file = intent?.getStringExtra(EXTRA_FILE)
         acquireWakeLock()
         job = scope.launch {
             try {
-                AudioEngine(this@PlaybackService).playBlock(source)
+                AudioEngine(this@PlaybackService).playBlock(source, file)
             } catch (t: Throwable) {
                 prefs.appendLog("Fehler: ${t.javaClass.simpleName}: ${t.message}")
             } finally {
@@ -97,10 +98,14 @@ class PlaybackService : Service() {
         const val CHANNEL_ID = "foxradio_playback"
         const val NOTIF_ID = 1
         const val EXTRA_SOURCE = "source"
-        private const val WAKELOCK_TIMEOUT_MS = 3 * 60_000L
+        const val EXTRA_FILE = "file"
+        private const val WAKELOCK_TIMEOUT_MS = 20 * 60_000L
 
-        fun start(context: Context, source: String) {
-            val intent = Intent(context, PlaybackService::class.java).putExtra(EXTRA_SOURCE, source)
+        /** file = Pfad eines vorgeladenen Blocks, null = eingebauter Testblock. */
+        fun start(context: Context, source: String, file: String?) {
+            val intent = Intent(context, PlaybackService::class.java)
+                .putExtra(EXTRA_SOURCE, source)
+                .putExtra(EXTRA_FILE, file)
             try {
                 ContextCompat.startForegroundService(context, intent)
             } catch (e: Exception) {

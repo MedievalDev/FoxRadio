@@ -38,9 +38,14 @@ object Scheduler {
     const val EXTRA_SOURCE = "source"
     const val SOURCE_SLOT = "slot"
     const val SOURCE_TEST = "test"
+    const val SOURCE_SYNC = "sync"
 
     private const val REQ_SLOT = 1
     private const val REQ_TEST = 2
+    private const val REQ_SYNC = 3
+
+    /** Tagesdateien werden vor dem ersten Block geholt. */
+    private val SYNC_TIME: LocalTime = LocalTime.of(6, 45)
 
     fun canScheduleExact(context: Context): Boolean {
         val am = context.getSystemService(AlarmManager::class.java)
@@ -55,12 +60,18 @@ object Scheduler {
         val prefs = Prefs(context)
         val am = context.getSystemService(AlarmManager::class.java)
         val pending = slotIntent(context)
+        val syncPending = syncIntent(context)
         if (!prefs.scheduleEnabled) {
             am.cancel(pending)
+            am.cancel(syncPending)
             return null
         }
-        val next = Schedule.nextSlot(ZonedDateTime.now(), prefs.weekdaysOnly)
+        val now = ZonedDateTime.now()
+        val next = Schedule.nextSlot(now, prefs.weekdaysOnly)
         setExact(am, next.toInstant().toEpochMilli(), pending)
+        var sync = ZonedDateTime.of(next.toLocalDate(), SYNC_TIME, now.zone)
+        if (!sync.isAfter(now)) sync = ZonedDateTime.of(now.toLocalDate().plusDays(1), SYNC_TIME, now.zone)
+        setExact(am, sync.toInstant().toEpochMilli(), syncPending)
         return next
     }
 
@@ -82,6 +93,13 @@ object Scheduler {
         context,
         REQ_SLOT,
         Intent(context, AlarmReceiver::class.java).putExtra(EXTRA_SOURCE, SOURCE_SLOT),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    private fun syncIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        REQ_SYNC,
+        Intent(context, AlarmReceiver::class.java).putExtra(EXTRA_SOURCE, SOURCE_SYNC),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 

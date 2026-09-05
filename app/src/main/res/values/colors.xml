@@ -14,5 +14,9 @@
     <color name="fox_green">#4CC38A</color>
     <color name="fox_red">#E5484D</color>
     <color name="fox_gray">#7A7480</color>
+    <color name="rubric_gaming">#F0842A</color>
+    <color name="rubric_dev">#5AA9E6</color>
+    <color name="rubric_anthropic">#D4A25A</color>
+    <color name="rubric_indie">#4CC38A</color>
     <color name="ic_launcher_background">#E8701A</color>
 </resources>

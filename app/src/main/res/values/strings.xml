@@ -39,6 +39,38 @@
     <string name="autostart_not_found">Autostart-Seite nicht gefunden, App-Info wird geöffnet.</string>
     <string name="exact_alarm_not_needed">Auf dieser Android-Version nicht nötig.</string>
 
+    <string name="section_today">Heute</string>
+    <string name="today_none">Noch keine Tagesdaten geladen. Adresse eintragen und "Jetzt laden".</string>
+    <string name="today_summary">%1$s: %2$d Blöcke, %3$d Artikel</string>
+    <string name="today_status_ok">Nachtlauf ok: %1$s</string>
+    <string name="today_status_fail">Nachtlauf fehlgeschlagen: %1$s</string>
+    <string name="today_last_sync">Zuletzt geladen: %1$s</string>
+    <string name="btn_articles">Artikel lesen</string>
+    <string name="btn_sync">Jetzt laden</string>
+    <string name="toast_sync_started">Lade Tagesdaten …</string>
+
+    <string name="section_connection">Verbindung</string>
+    <string name="hint_url">Adresse, z. B. https://alchemy-fox.de/foxradio</string>
+    <string name="hint_user">Benutzer (.htaccess)</string>
+    <string name="hint_pass">Passwort</string>
+    <string name="btn_save_connection">Speichern</string>
+    <string name="toast_saved">Gespeichert</string>
+
+    <string name="title_articles">Meldungen</string>
+    <string name="title_article">Meldung</string>
+    <string name="articles_empty">Keine Artikel geladen.</string>
+    <string name="article_source">Quelle: %1$s</string>
+    <string name="btn_open_source">Artikel öffnen</string>
+    <string name="btn_play_segment">Nachhören (%1$s)</string>
+    <string name="btn_stop_segment">Stopp</string>
+    <string name="audio_missing">Audio nicht vorgeladen</string>
+    <string name="rubric_gaming">Gaming</string>
+    <string name="rubric_dev">Entwicklung</string>
+    <string name="rubric_anthropic">Anthropic</string>
+    <string name="rubric_indie">Indie-RPG</string>
+
+    <string name="notif_sync">Lade Tagesdaten</string>
+
     <string name="section_log">Protokoll</string>
     <string name="btn_clear_log">Leeren</string>
     <string name="log_empty">Noch nichts passiert.</string>

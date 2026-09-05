@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -27,10 +29,27 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ArticlesActivity"
+            android:exported="false"
+            android:label="@string/title_articles"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".ArticleActivity"
+            android:exported="false"
+            android:label="@string/title_article"
+            android:parentActivityName=".ArticlesActivity" />
+
         <service
             android:name=".PlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".SyncService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".AlarmReceiver"
