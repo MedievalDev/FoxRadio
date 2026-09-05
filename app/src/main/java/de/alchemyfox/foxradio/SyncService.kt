@@ -31,6 +31,8 @@ class SyncService : Service() {
         job = scope.launch {
             try {
                 prefs.appendLog("Sync: " + Sync.run(this@SyncService))
+                // Die Sendezeiten kommen aus der Playlist, also nach dem Laden neu planen.
+                Scheduler.sync(this@SyncService)?.let { prefs.appendLog("Nächster Block: ${it.format(Schedule.FMT)}") }
             } catch (t: Throwable) {
                 prefs.appendLog("Sync fehlgeschlagen: ${t.message ?: t.javaClass.simpleName}")
             } finally {

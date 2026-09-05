@@ -69,17 +69,22 @@ class AlarmReceiver : BroadcastReceiver() {
     private fun blockForNow(context: Context): String? {
         val prefs = Prefs(context)
         val lib = Library(context)
-        val slot = String.format(java.util.Locale.ROOT, "%02d:00", LocalTime.now().hour)
+        val now = LocalTime.now()
+        val slot = now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
         val (date, blocks) = lib.playlist() ?: run {
-            prefs.appendLog("Keine Playlist geladen, Block $slot übersprungen")
+            prefs.appendLog("Keine Playlist geladen, Block um $slot übersprungen")
             return null
         }
         val today = java.time.LocalDate.now().toString()
         if (date != today) {
-            prefs.appendLog("Playlist ist von $date, nicht von heute. Block $slot übersprungen")
+            prefs.appendLog("Playlist ist von $date, nicht von heute. Block um $slot übersprungen")
             return null
         }
-        val block = blocks.firstOrNull { it.slot == slot } ?: run {
+        // Der Wecker feuert zur Sendezeit; den Block mit der naechstliegenden Zeit nehmen (max. 10 Minuten daneben).
+        val block = blocks
+            .mapNotNull { b -> Schedule.parseSlot(b.slot)?.let { t -> b to Math.abs(java.time.Duration.between(t, now).toMinutes()) } }
+            .filter { it.second <= 10 }
+            .minByOrNull { it.second }?.first ?: run {
             prefs.appendLog("Kein Block für $slot in der Playlist")
             return null
         }

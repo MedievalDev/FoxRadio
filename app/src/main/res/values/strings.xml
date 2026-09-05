@@ -6,7 +6,7 @@
     <string name="status_label_next">Nächster Block</string>
     <string name="status_label_off">Sendeplan aus</string>
     <string name="status_off_time">Kein Block geplant</string>
-    <string name="status_off_hint">Unten den Sendeplan aktivieren, dann kommen die Blöcke 07:00 bis 16:00 zur vollen Stunde.</string>
+    <string name="status_off_hint">Unten den Sendeplan aktivieren, dann kommen die Blöcke zu den Sendezeiten aus der Playlist des Tages.</string>
     <string name="countdown_days">in %1$d Tagen %2$d Std</string>
     <string name="countdown_hours">in %1$d Std %2$d Min</string>
     <string name="countdown_minutes">in %1$d Min</string>
@@ -28,7 +28,7 @@
     <string name="switch_weekdays">Nur Montag bis Freitag</string>
     <string name="switch_only_music">Nur wenn Musik läuft</string>
     <string name="switch_live_weather">Live-Wetter vor jedem Block (Android-Stimme)</string>
-    <string name="schedule_hint">07:00 Morning Show, danach stündlich bis 16:00. Läuft gerade nichts, wird der Block übersprungen. Die Test-Buttons spielen immer.</string>
+    <string name="schedule_hint">Sendezeiten kommen aus der Playlist des Tages (Morning Show 07:00, Tagesthema in Teilen, Blöcke bis 15:00). Läuft gerade nichts, wird der Block übersprungen. Die Test-Buttons spielen immer.</string>
 
     <string name="section_permissions">Berechtigungen</string>
     <string name="perm_exact">Exakte Wecker</string>

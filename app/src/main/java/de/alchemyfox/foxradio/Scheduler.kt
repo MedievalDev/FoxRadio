@@ -14,25 +14,38 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Sendeschema: 07:00 Morning Show, danach stuendlich bis 16:00. */
+/**
+ * Sendeschema. Die Sendezeiten kommen aus der geladenen Playlist (der PC legt
+ * sie fest, z. B. 07:00, 07:30, 08:00, 08:30, 08:55 ...). Ohne Playlist gilt
+ * der alte Standard: volle Stunden 07:00 bis 16:00.
+ */
 object Schedule {
-    val SLOT_HOURS: List<Int> = (7..16).toList()
+    val DEFAULT_TIMES: List<LocalTime> = (7..16).map { LocalTime.of(it, 0) }
 
     val FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE dd.MM. HH:mm", Locale.GERMAN)
 
-    fun nextSlot(now: ZonedDateTime, weekdaysOnly: Boolean): ZonedDateTime {
+    /** Sendezeiten aus der Playlist, sortiert und ohne Doppelte, sonst Standard. */
+    fun slotTimes(context: Context): List<LocalTime> {
+        val blocks = Library(context).playlist()?.second ?: return DEFAULT_TIMES
+        val times = blocks.mapNotNull { parseSlot(it.slot) }.distinct().sorted()
+        return if (times.isEmpty()) DEFAULT_TIMES else times
+    }
+
+    fun parseSlot(slot: String): LocalTime? = runCatching { LocalTime.parse(slot.trim()) }.getOrNull()
+
+    fun nextSlot(now: ZonedDateTime, weekdaysOnly: Boolean, times: List<LocalTime> = DEFAULT_TIMES): ZonedDateTime {
         var day = now.toLocalDate()
         repeat(8) {
             val weekend = day.dayOfWeek == DayOfWeek.SATURDAY || day.dayOfWeek == DayOfWeek.SUNDAY
             if (!weekdaysOnly || !weekend) {
-                for (hour in SLOT_HOURS) {
-                    val candidate = ZonedDateTime.of(day, LocalTime.of(hour, 0), now.zone)
+                for (time in times) {
+                    val candidate = ZonedDateTime.of(day, time, now.zone)
                     if (candidate.isAfter(now)) return candidate
                 }
             }
             day = day.plusDays(1)
         }
-        return ZonedDateTime.of(day, LocalTime.of(SLOT_HOURS.first(), 0), now.zone)
+        return ZonedDateTime.of(day, times.first(), now.zone)
     }
 }
 
@@ -72,7 +85,7 @@ object Scheduler {
             return null
         }
         val now = ZonedDateTime.now()
-        val next = Schedule.nextSlot(now, prefs.weekdaysOnly)
+        val next = Schedule.nextSlot(now, prefs.weekdaysOnly, Schedule.slotTimes(context))
         setExact(am, next.toInstant().toEpochMilli(), pending)
         var sync = ZonedDateTime.of(next.toLocalDate(), SYNC_TIME, now.zone)
         if (!sync.isAfter(now)) sync = ZonedDateTime.of(now.toLocalDate().plusDays(1), SYNC_TIME, now.zone)

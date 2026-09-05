@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refresh() {
         val now = ZonedDateTime.now()
-        val next = if (prefs.scheduleEnabled) Schedule.nextSlot(now, prefs.weekdaysOnly) else null
+        val next = if (prefs.scheduleEnabled) Schedule.nextSlot(now, prefs.weekdaysOnly, Schedule.slotTimes(this)) else null
         if (next != null) {
             statusLabel.setText(R.string.status_label_next)
             statusTime.text = next.format(Schedule.FMT)
