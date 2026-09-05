@@ -1,8 +1,9 @@
 # Übergabe an die lokale Session
 
 Stand 2026-09-05. Aus der Cloud gebaut und getestet: App komplett (Overlay,
-Sendeplan, Sync, Artikel), PC-Pipeline komplett gegen Mock-Server. Was fehlt,
-braucht den PC mit ComfyUI, den Webspace und das Handy. Reihenfolge einhalten,
+Sendeplan, Sync, Artikel), PC-Pipeline komplett gegen Mock-Server. Die lokale
+Session hat Schritt 1 (Feeds) erledigt und in Schritt 2 das direkte
+TTS-Backend gebaut. Was fehlt, braucht den PC, den Webspace und das Handy. Reihenfolge einhalten,
 jeder Schritt ist für sich prüfbar.
 
 ## 1. Feeds prüfen (10 Minuten)
@@ -19,37 +20,32 @@ prüfen, ob `parse_anthropic_news` in `pc/feeds.py` Titel und Datum findet,
 sonst die Regex an die echte Seite anpassen. Ergebnis mit
 `%PY% pc\feeds.py fetch -o pc\work\feeds.json` ansehen.
 
-## 2. Stimmen in ComfyUI (Phase 2)
+## 2. Stimmen (Phase 2)
 
-Vorlagen für die drei gängigen Node-Pakete liegen fertig in
-`pc/voices/templates/` (Namen und Eingänge aus dem Quellcode der Pakete).
-Es muss nichts mehr in der ComfyUI-Oberfläche zusammengeklickt werden.
+Stand der lokalen Session (Commit 89b977a): Der ComfyUI-Node rendert mit dem
+transformers 5.9 von ComfyUI nicht. Qwen3-TTS läuft deshalb direkt aus dem
+ComfyUI-Ordner in einem eigenen Arbeitsprozess mit der isolierten Umgebung
+`qwen_tts_env` (Backend `direct`, Standard in `foxtts.example.json`). Das
+Modell bleibt geladen, sdpa-Attention, Echtzeitfaktor 2,2. Damit passen 300
+Zeilen à fünf Sekunden in etwa 55 Minuten, also in das Fenster 05:00 bis 06:30.
 
-1. ComfyUI starten. Unter Custom Nodes nachsehen, welches Qwen3-TTS-Paket
-   installiert ist: DarioFT (`dario_`), flybirdxx (`fly_`) oder 1038lab
-   (`ailab_`). Ist es ein anderes, einen Design-Workflow per Hand bauen und
-   über "Save (API Format)" exportieren, der Rest bleibt gleich.
-2. `pc\foxtts.example.json` nach `pc\foxtts.json` kopieren.
-3. Stimme A: `instruct` in der `*_design.json` prüfen (Vorschlag steht drin),
-   dann die Referenz erzeugen, direkt in den ComfyUI-Eingangsordner:
-   `%PY% pc\foxtts.py voice-design pc\voices\templates\dario_design.json -o C:\Users\marco\Desktop\ComfyUI_windows_portable\ComfyUI\input\ref_a.wav`
-   Anhören. Passt sie nicht: Beschreibung oder `seed` ändern, wiederholen.
-4. `*_clone.json` nach `pc\voices\a.json` kopieren, `ref_text` auf den Satz
-   setzen, den `voice-design` ausgegeben hat, `LoadAudio.audio` bleibt
-   `ref_a.wav`.
-5. Stimme B genauso mit `ref_b.wav` und `pc\voices\b.json`.
-6. `%PY% pc\foxtts.py probe pc\voices\a.json` muss den Text-Knoten erkennen
-   (bei allen Vorlagen geprüft).
-7. `%PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3`,
-   anhören, `test.json` daneben zeigt Renderzeit pro Zeile und Echtzeitfaktor.
-   Damit 0.6B oder 1.7B entscheiden (`model_size`, `model_choice` oder
-   `repo_id` in der Clone-Vorlage). Ziel: 150 bis 300 Zeilen zwischen 05:00
-   und 06:30, also Faktor unter etwa 1,5 bei 1.7B, sonst 0.6B.
-8. Modell-Entladen ist in den Vorlagen aus (`unload_model_after_generate`,
-   `unload_models`), sonst lädt jede Zeile das Modell neu.
+1. `pc\foxtts.example.json` nach `pc\foxtts.json`, Pfade unter `direct` prüfen.
+2. Referenzen erzeugen, je Stimme einmal:
+   `%PY% pc\foxtts.py line -v A_design -t "<Satz>" -o pc\voices\a_ref.wav`
+   und dasselbe mit `B_design` nach `b_ref.wav`. Anhören. Passt die Stimme
+   nicht: `instruct` oder `seed` unter `A_design` und `B_design` ändern,
+   wiederholen. Den gesprochenen Satz in `pc\voices\ref_texte.txt` und
+   exakt so als `ref_text` bei `A` und `B` eintragen.
+3. Testdialog: `%PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3`,
+   anhören, `test.json` daneben zeigt Renderzeit pro Zeile und den Faktor.
+   0.6B oder 1.7B über `model_size` bei `A` und `B`.
+4. Musikbett: eigene, rechtefreie Musikdateien nach `pc\music\` legen, pro
+   Block wird eine zufällig gewählt und mit minus 20 dB untergelegt. Ohne
+   Dateien läuft der Block ohne Musik. Lautstärke über `music.gain_db`.
 
-Warum Design plus Clone: Voice Design liefert nicht bei jeder Zeile dieselbe
-Stimme. Einmal designen, als Referenz speichern, alles per Clone rendern.
+Nur falls `direct` nicht läuft: Backend `comfy` mit exportierten Workflows,
+fertige Vorlagen für drei Node-Pakete in `pc/voices/templates/`, Anleitung
+dort. `foxtts.py probe` und `voice-design` gehören zu diesem Weg.
 
 ## 3. Texte (Phase 4)
 
