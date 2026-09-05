@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FoxRadio</string>
+    <string name="app_subtitle">Overlay-Radio über deiner Musik</string>
+
+    <string name="status_label_next">Nächster Block</string>
+    <string name="status_label_off">Sendeplan aus</string>
+    <string name="status_off_time">Kein Block geplant</string>
+    <string name="status_off_hint">Unten den Sendeplan aktivieren, dann kommen die Blöcke zu den Sendezeiten aus der Playlist des Tages.</string>
+    <string name="countdown_days">in %1$d Tagen %2$d Std</string>
+    <string name="countdown_hours">in %1$d Std %2$d Min</string>
+    <string name="countdown_minutes">in %1$d Min</string>
+    <string name="countdown_soon">gleich</string>
+    <string name="status_no_exact_alarm">Exakte Wecker sind nicht erlaubt. Der Block kann sich verspäten. Unten freigeben.</string>
+
+    <string name="btn_play_now">Testblock abspielen</string>
+    <string name="btn_play_in_2min">Test in 2 Minuten</string>
+    <string name="toast_test_scheduled">In 2 Minuten. Handy sperren, Musik laufen lassen.</string>
+
+    <string name="section_mode">Unterbrechung</string>
+    <string name="mode_pause">Fade + Pause</string>
+    <string name="mode_duck">Ducking</string>
+    <string name="mode_pause_hint">Musik blendet aus und pausiert. Nach dem Block kommt sie zurück und blendet wieder ein.</string>
+    <string name="mode_duck_hint">Musik läuft leise weiter, der Block liegt darüber.</string>
+
+    <string name="section_schedule">Sendeplan</string>
+    <string name="switch_schedule">Sendeplan aktiv</string>
+    <string name="switch_weekdays">Nur Montag bis Freitag</string>
+    <string name="switch_only_music">Nur wenn Musik läuft</string>
+    <string name="switch_live_weather">Live-Wetter vor jedem Block (Android-Stimme)</string>
+    <string name="schedule_hint">Sendezeiten kommen aus der Playlist des Tages (Morning Show 07:00, Tagesthema in Teilen, Blöcke bis 15:00). Läuft gerade nichts, wird der Block übersprungen. Die Test-Buttons spielen immer.</string>
+
+    <string name="section_permissions">Berechtigungen</string>
+    <string name="perm_exact">Exakte Wecker</string>
+    <string name="perm_battery">Akku-Optimierung aus</string>
+    <string name="perm_notify">Benachrichtigungen</string>
+    <string name="perm_autostart">Xiaomi Autostart</string>
+    <string name="perm_autostart_hint">Kann die App nicht prüfen. Einmal öffnen und FoxRadio einschalten.</string>
+    <string name="btn_open">Öffnen</string>
+    <string name="autostart_not_found">Autostart-Seite nicht gefunden, App-Info wird geöffnet.</string>
+    <string name="exact_alarm_not_needed">Auf dieser Android-Version nicht nötig.</string>
+
+    <string name="section_today">Heute</string>
+    <string name="today_none">Noch keine Tagesdaten geladen. Adresse eintragen und "Jetzt laden".</string>
+    <string name="today_summary">%1$s: %2$d Blöcke, %3$d Artikel</string>
+    <string name="today_status_ok">Nachtlauf ok: %1$s</string>
+    <string name="today_status_fail">Nachtlauf fehlgeschlagen: %1$s</string>
+    <string name="today_last_sync">Zuletzt geladen: %1$s</string>
+    <string name="btn_articles">Artikel lesen</string>
+    <string name="btn_sync">Jetzt laden</string>
+    <string name="btn_play_block_now">Heutigen Block jetzt abspielen</string>
+    <string name="btn_simulation_start">Simulation: ab jetzt wie 07:00, stündlich bis 20:00</string>
+    <string name="btn_simulation_stop">Simulation beenden</string>
+    <string name="sim_status">Simulation läuft: Block %1$d von %2$d, nächster um %3$s</string>
+    <string name="toast_no_block">Kein Block geladen. Erst Verbindung eintragen und "Jetzt laden".</string>
+    <string name="toast_sync_started">Lade Tagesdaten …</string>
+
+    <string name="section_connection">Verbindung</string>
+    <string name="hint_url">Adresse, z. B. https://alchemy-fox.de/foxradio</string>
+    <string name="hint_user">Benutzer (.htaccess)</string>
+    <string name="hint_pass">Passwort</string>
+    <string name="btn_save_connection">Speichern</string>
+    <string name="toast_saved">Gespeichert</string>
+
+    <string name="title_articles">Meldungen</string>
+    <string name="title_article">Meldung</string>
+    <string name="articles_empty">Keine Artikel geladen.</string>
+    <string name="article_source">Quelle: %1$s</string>
+    <string name="btn_open_source">Artikel öffnen</string>
+    <string name="btn_play_segment">Nachhören (%1$s)</string>
+    <string name="btn_stop_segment">Stopp</string>
+    <string name="audio_missing">Audio nicht vorgeladen</string>
+    <string name="rubric_gaming">Gaming</string>
+    <string name="rubric_dev">Entwicklung</string>
+    <string name="rubric_anthropic">Anthropic</string>
+    <string name="rubric_indie">Indie-RPG</string>
+
+    <string name="notif_sync">Lade Tagesdaten</string>
+
+    <string name="section_log">Protokoll</string>
+    <string name="btn_clear_log">Leeren</string>
+    <string name="log_empty">Noch nichts passiert.</string>
+
+    <string name="version_fmt">FoxRadio %1$s</string>
+
+    <string name="notif_channel_name">Wiedergabe</string>
+    <string name="notif_channel_desc">Läuft, während ein FoxRadio-Block abgespielt wird.</string>
+    <string name="notif_title">FoxRadio</string>
+    <string name="notif_text">Block läuft</string>
+
+    <string name="tts_intro">FoxRadio. Es ist %1$s. Wenn du das hörst, funktioniert das Overlay. Gleich geht die Musik weiter.</string>
+</resources>

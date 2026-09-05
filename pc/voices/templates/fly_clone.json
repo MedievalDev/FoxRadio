@@ -1,0 +1,43 @@
+{
+  "4": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": "ref_a.wav"
+    }
+  },
+  "2": {
+    "class_type": "FB_Qwen3TTSVoiceClone",
+    "inputs": {
+      "target_text": "PLATZHALTER",
+      "model_choice": "1.7B",
+      "device": "auto",
+      "precision": "bf16",
+      "language": "German",
+      "ref_audio": [
+        "4",
+        0
+      ],
+      "ref_text": "REFERENZTEXT: genau das, was in ref_a.wav gesprochen wird",
+      "seed": 42,
+      "max_new_tokens": 2048,
+      "top_p": 0.8,
+      "top_k": 20,
+      "temperature": 1.0,
+      "repetition_penalty": 1.05,
+      "x_vector_only": false,
+      "attention": "auto",
+      "unload_model_after_generate": false,
+      "custom_model_path": ""
+    }
+  },
+  "3": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "2",
+        0
+      ],
+      "filename_prefix": "audio/foxradio"
+    }
+  }
+}

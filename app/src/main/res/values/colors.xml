@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fox_orange">#F0842A</color>
+    <color name="fox_on_orange">#1A0F05</color>
+    <color name="fox_orange_container">#4A250A</color>
+    <color name="fox_on_orange_container">#FFDCC2</color>
+    <color name="fox_amber">#FFB36B</color>
+    <color name="fox_background">#131114</color>
+    <color name="fox_surface">#1F1B22</color>
+    <color name="fox_surface_variant">#2C2730</color>
+    <color name="fox_on_surface">#F3EDEA</color>
+    <color name="fox_on_surface_variant">#A99F9C</color>
+    <color name="fox_outline">#4A434E</color>
+    <color name="fox_green">#4CC38A</color>
+    <color name="fox_red">#E5484D</color>
+    <color name="fox_gray">#7A7480</color>
+    <color name="rubric_gaming">#F0842A</color>
+    <color name="rubric_dev">#5AA9E6</color>
+    <color name="rubric_anthropic">#D4A25A</color>
+    <color name="rubric_indie">#4CC38A</color>
+    <color name="ic_launcher_background">#E8701A</color>
+</resources>

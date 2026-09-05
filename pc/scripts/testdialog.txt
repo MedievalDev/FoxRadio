@@ -1,0 +1,16 @@
+# Testdialog für Phase 2: dieselben Zeilen mit beiden Stimmen rendern und anhören.
+# A führt durch die Sendung, sachlich. B kommentiert, lockerer.
+
+A: Guten Morgen, es ist sieben Uhr, hier ist FoxRadio. Heute ist Montag, der achte September.
+B: Und ich hab schon den zweiten Kaffee. Was steht an?
+A: In Ellwangen bleibt es bewölkt bei siebzehn Grad, am Nachmittag kann es kurz regnen.
+B: Also Jacke mit in die Halle. Klassiker.
+
+A: Zu den Gaming-News. Larian hat den ersten Trailer zum neuen Projekt gezeigt, wieder ein Rollenspiel, Release ist noch offen.
+B: Wenn die das so ernst nehmen wie Baldur's Gate drei, warte ich gerne.
+A: Aus der Entwicklerecke: Unreal Engine fünf punkt sieben ist da, mit Verbesserungen bei Nanite für Vegetation.
+B: Das heißt, deine Wälder in Alchimist werden schöner, ohne dass du was machst. Beste Art von Update.
+
+A: Und ein Indie-Projekt zum Schluss: Ein kleines Studio aus Finnland baut ein rundenbasiertes Rollenspiel mit handgezeichneten Karten.
+B: Klingt nach genau dem Zeug, das wir hier mögen. Link kommt in die App.
+A: Das war der Morgenblock. Nächste Meldung um acht.

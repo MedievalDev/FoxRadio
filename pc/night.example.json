@@ -1,0 +1,17 @@
+{
+  "_hinweis": "Als night.json speichern. upload.method: none | dir | sftp | ftp. Strato hat kein FTP, nur SSH: method sftp mit dem paketeigenen Host aus FileZilla (nicht ssh.strato.de) und dem SFTP-Benutzer, braucht paramiko in der ComfyUI-Python. remote_dir ist der Ordner, der per .htaccess geschützt wird. Für die App: web_user/web_password sind die Basic-Auth-Zugangsdaten des Ordners (nur zur Ablage, night.py benutzt sie nicht).",
+  "upload": {
+    "method": "sftp",
+    "host": "5017972395.ssh.w2.strato.hosting",
+    "port": 22,
+    "user": "SFTP-BENUTZER",
+    "password": "SFTP-PASSWORT",
+    "remote_dir": "/foxradio"
+  },
+  "web_user": "marco",
+  "web_password": "BASIC-AUTH-PASSWORT",
+  "ntfy_topic": "",
+  "shutdown": false,
+  "shutdown_delay_s": 120,
+  "keep_days": 7
+}
