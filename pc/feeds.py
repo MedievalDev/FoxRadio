@@ -143,32 +143,85 @@ def parse_feed(data, source):
 
 
 # ----------------------------------------------------------------------------
-# anthropic.com/news (server-gerendert, keine RSS). Best effort, ungeprüft.
+# anthropic.com/news (server-gerendert, keine RSS). Geprueft 2026-09-05:
+# jede Meldung ist ein <a href="/news/..."> mit <time>, einem Element mit
+# Klasse *__subject (Rubrik), *__title (Titel) und bei den grossen Kacheln
+# *__body (Teaser). Aendert sich das Layout, greift der Fallback auf den
+# reinen Linktext, und die Rubrik faellt notfalls aus statt Unsinn zu senden.
 # ----------------------------------------------------------------------------
+
+def _inner(tag_re, text):
+    m = re.search(tag_re, text, flags=re.S | re.I)
+    return strip_html(m.group(1), limit=300) if m else ""
+
 
 def parse_anthropic_news(data, source):
     text = data.decode("utf-8", "replace")
     items, seen = [], set()
     for m in re.finditer(r'<a[^>]+href="(/news/[^"#?]+)"[^>]*>(.*?)</a>', text, flags=re.S | re.I):
-        path, inner = m.group(1), strip_html(m.group(2), limit=300)
-        if path in seen or not inner:
+        path, block = m.group(1), m.group(2)
+        if path in seen:
+            continue
+        title = _inner(r'<(?:h\d|span)[^>]*class="[^"]*__title[^"]*"[^>]*>(.*?)</(?:h\d|span)>', block)
+        summary = _inner(r'<p[^>]*class="[^"]*__body[^"]*"[^>]*>(.*?)</p>', block)
+        date_text = _inner(r'<time[^>]*>(.*?)</time>', block)
+        if not title:  # Fallback: ganzer Linktext ohne Datum
+            title = strip_html(block, limit=300)
+            if date_text:
+                title = title.replace(date_text, "").strip(" \u00b7-")
+        if not title:
             continue
         seen.add(path)
         date = None
-        dm = re.search(r"([A-Z][a-z]{2,8} \d{1,2}, \d{4})", inner)
-        if dm:
+        if date_text:
             for fmt in ("%b %d, %Y", "%B %d, %Y"):
                 try:
-                    date = datetime.strptime(dm.group(1), fmt).replace(tzinfo=timezone.utc)
+                    date = datetime.strptime(date_text, fmt).replace(tzinfo=timezone.utc)
                     break
                 except ValueError:
                     pass
-            inner = inner.replace(dm.group(1), "").strip(" ·-")
         items.append({
-            "title": inner[:200],
+            "title": title[:200],
             "link": "https://www.anthropic.com" + path,
-            "summary": "",
+            "summary": summary,
             "published": date,
+            "image": None,
+            "source": source["name"],
+            "rubric": source["rubric"],
+        })
+    return items
+
+
+# ----------------------------------------------------------------------------
+# GitHub-Suche: kleine Spiele, die sonst niemand meldet. Quelle mit
+# "type": "github" und "query" wie in der Suche auf github.com; {since}
+# wird durch das Datum vor since_hours ersetzt. Trainer, Hacks und
+# geleakte Builds tauchen dort massenhaft auf und fliegen raus.
+# ----------------------------------------------------------------------------
+
+GITHUB_MUELL = re.compile(r"trainer|hack|cheat|mod menu|leak|crack|aimbot|unlock|bot for|auto-?catch|external", re.I)
+
+
+def fetch_github(source, since):
+    q = source["query"].replace("{since}", since.strftime("%Y-%m-%d"))
+    url = "https://api.github.com/search/repositories?" + urllib.parse.urlencode(
+        {"q": q, "sort": "stars", "order": "desc", "per_page": 30})
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/vnd.github+json"})
+    time.sleep(2)   # Suche ohne Token: 10 Anfragen je Minute
+    with urllib.request.urlopen(req, timeout=25) as r:
+        data = json.loads(r.read())
+    items = []
+    for repo in data.get("items", []):
+        desc = (repo.get("description") or "").strip()
+        if GITHUB_MUELL.search(repo["name"] + " " + desc):
+            continue
+        sterne = repo.get("stargazers_count", 0)
+        items.append({
+            "title": f"{repo['name']}: {desc}" if desc else repo["name"],
+            "link": repo["html_url"],
+            "summary": f"{desc} (GitHub, {sterne} Sterne, {repo.get('language') or 'Sprache unbekannt'}, "
+                       f"von {repo['owner']['login']})",
+            "published": parse_date(repo.get("created_at")),
             "image": None,
             "source": source["name"],
             "rubric": source["rubric"],
@@ -194,18 +247,31 @@ def og_image(url):
     return None
 
 
+def fetch_source(src, since):
+    if src.get("type") == "github":
+        return fetch_github(src, since)
+    data = fetch(src["url"])
+    return parse_anthropic_news(data, src) if src.get("type") == "anthropic" else parse_feed(data, src)
+
+
 def collect(cfg, since=None, with_images=True):
-    since = since or datetime.now(timezone.utc) - timedelta(hours=cfg.get("since_hours", 26))
+    jetzt = datetime.now(timezone.utc)
+    since = since or jetzt - timedelta(hours=cfg.get("since_hours", 26))
     out, errors, seen = [], [], set()
     for src in cfg["sources"]:
+        # Quellen mit wenig Durchsatz (GitHub, Foren) duerfen weiter zurueckschauen
+        src_since = jetzt - timedelta(hours=src["since_hours"]) if src.get("since_hours") else since
         try:
-            data = fetch(src["url"])
-            items = parse_anthropic_news(data, src) if src.get("type") == "anthropic" else parse_feed(data, src)
+            items = fetch_source(src, src_since)
         except Exception as e:
             errors.append(f"{src['name']}: {type(e).__name__}: {e}")
             log(f"FEHLER {src['name']}: {e}")
             continue
-        fresh = [i for i in items if i["published"] is None or i["published"] >= since]
+        fresh = [i for i in items if i["published"] is None or i["published"] >= src_since]
+        # laute Quellen deckeln, neueste zuerst
+        if src.get("max"):
+            fresh.sort(key=lambda i: i["published"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+            fresh = fresh[:src["max"]]
         log(f"{src['name']}: {len(items)} Einträge, {len(fresh)} neu")
         for it in fresh:
             key = it["link"].split("?")[0].rstrip("/")
@@ -213,14 +279,21 @@ def collect(cfg, since=None, with_images=True):
                 continue
             seen.add(key)
             out.append(it)
-    # pro Rubrik begrenzen, neueste zuerst
+    # pro Rubrik begrenzen: reihum ueber die Quellen, innerhalb der Quelle
+    # neueste zuerst. Nur nach Datum wuerden langsame Quellen (GitHub schaut
+    # 30 Tage zurueck) nie in die Rubrik kommen.
     per = cfg.get("max_per_rubric", 10)
-    by_rubric = {}
+    stapel = {}   # rubrik -> quelle -> [items]
     for it in sorted(out, key=lambda i: i["published"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True):
-        by_rubric.setdefault(it["rubric"], [])
-        if len(by_rubric[it["rubric"]]) < per:
-            by_rubric[it["rubric"]].append(it)
-    result = [it for lst in by_rubric.values() for it in lst]
+        stapel.setdefault(it["rubric"], {}).setdefault(it["source"], []).append(it)
+    result = []
+    for rubrik, quellen in stapel.items():
+        genommen = []
+        while len(genommen) < per and any(quellen.values()):
+            for q in list(quellen):
+                if quellen[q] and len(genommen) < per:
+                    genommen.append(quellen[q].pop(0))
+        result.extend(genommen)
     if with_images:
         for it in result:
             if not it.get("image"):
@@ -287,8 +360,7 @@ def main(argv=None):
         ok = True
         for src in cfg["sources"]:
             try:
-                data = fetch(src["url"])
-                items = parse_anthropic_news(data, src) if src.get("type") == "anthropic" else parse_feed(data, src)
+                items = fetch_source(src, datetime.now(timezone.utc) - timedelta(hours=src.get("since_hours", cfg.get("since_hours", 26))))
                 dated = sum(1 for i in items if i["published"])
                 print(f"OK   {src['name']:<22} {len(items):3d} Einträge, {dated} mit Datum")
             except Exception as e:

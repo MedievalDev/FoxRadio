@@ -1,19 +1,115 @@
 {
-  "_hinweis": "Quellen sind ein Startvorschlag, aus der Cloud-Session nicht erreichbar gewesen (ungeprüft). Mit 'python feeds.py check' am PC prüfen und Tote rauswerfen.",
+  "_hinweis": "Geprüft am PC 2026-09-05 mit 'feeds.py check'. itch.io, RPG Codex und RPGWatch liefern 403 (auch mit Browser-UA), Kickstarter-Feeds ignorieren die Kategorie (Bücher statt Spiele), GameStar-Pfad war falsch. Reddit erlaubt nur eine Anfrage, deshalb ein Multi-Feed. 'max' deckelt laute Quellen, 'since_hours' lässt langsame weiter zurückschauen.",
   "since_hours": 26,
   "max_per_rubric": 10,
-  "weather": { "place": "Ellwangen", "latitude": 48.9614, "longitude": 10.1317 },
+  "weather": {
+    "place": "Ellwangen",
+    "latitude": 48.9614,
+    "longitude": 10.1317
+  },
   "sources": [
-    { "name": "GameStar", "rubric": "gaming", "url": "https://www.gamestar.de/rss/news.rss" },
-    { "name": "PC Gamer", "rubric": "gaming", "url": "https://www.pcgamer.com/rss/" },
-    { "name": "Rock Paper Shotgun", "rubric": "gaming", "url": "https://www.rockpapershotgun.com/feed" },
-    { "name": "Eurogamer", "rubric": "gaming", "url": "https://www.eurogamer.net/feed" },
-    { "name": "heise Developer", "rubric": "dev", "url": "https://www.heise.de/developer/rss/news-atom.xml" },
-    { "name": "Golem", "rubric": "dev", "url": "https://rss.golem.de/rss.php?feed=RSS2.0" },
-    { "name": "Game Developer", "rubric": "dev", "url": "https://www.gamedeveloper.com/rss.xml" },
-    { "name": "Hacker News Top", "rubric": "dev", "url": "https://hnrss.org/frontpage?points=150" },
-    { "name": "Anthropic News", "rubric": "anthropic", "type": "anthropic", "url": "https://www.anthropic.com/news" },
-    { "name": "itch.io RPG neu", "rubric": "indie", "url": "https://itch.io/games/newest/genre-rpg.xml" },
-    { "name": "RPG Codex News", "rubric": "indie", "url": "https://rpgcodex.net/forums/index.php?forums/rpg-news-content.4/index.rss" }
+    {
+      "name": "GameStar",
+      "rubric": "gaming",
+      "url": "https://www.gamestar.de/news/rss/news.rss"
+    },
+    {
+      "name": "PC Gamer",
+      "rubric": "gaming",
+      "url": "https://www.pcgamer.com/rss/"
+    },
+    {
+      "name": "Rock Paper Shotgun",
+      "rubric": "gaming",
+      "url": "https://www.rockpapershotgun.com/feed"
+    },
+    {
+      "name": "Eurogamer",
+      "rubric": "gaming",
+      "url": "https://www.eurogamer.net/feed"
+    },
+    {
+      "name": "heise Developer",
+      "rubric": "dev",
+      "url": "https://www.heise.de/developer/rss/news-atom.xml"
+    },
+    {
+      "name": "Golem",
+      "rubric": "dev",
+      "url": "https://rss.golem.de/rss.php?feed=RSS2.0"
+    },
+    {
+      "name": "Game Developer",
+      "rubric": "dev",
+      "url": "https://www.gamedeveloper.com/rss.xml"
+    },
+    {
+      "name": "Hacker News Top",
+      "rubric": "dev",
+      "url": "https://hnrss.org/frontpage?points=150"
+    },
+    {
+      "name": "Anthropic News",
+      "rubric": "anthropic",
+      "type": "anthropic",
+      "url": "https://www.anthropic.com/news"
+    },
+    {
+      "name": "RPGamer",
+      "rubric": "indie",
+      "url": "https://rpgamer.com/feed/"
+    },
+    {
+      "name": "Turn Based Lovers",
+      "rubric": "indie",
+      "url": "https://turnbasedlovers.com/feed/"
+    },
+    {
+      "name": "Indie Games Plus",
+      "rubric": "indie",
+      "url": "https://indiegamesplus.com/feed"
+    },
+    {
+      "name": "Alpha Beta Gamer",
+      "rubric": "indie",
+      "max": 3,
+      "url": "https://www.alphabetagamer.com/feed/"
+    },
+    {
+      "name": "IndieDB News",
+      "rubric": "indie",
+      "max": 3,
+      "url": "https://rss.indiedb.com/news/feed/rss.xml"
+    },
+    {
+      "name": "Reddit Indie (Top des Tages)",
+      "rubric": "indie",
+      "max": 3,
+      "url": "https://www.reddit.com/r/IndieGaming+indiegames+rpg_gamers+roguelikes/top/.rss?t=day"
+    },
+    {
+      "name": "GitHub neue Spiele",
+      "rubric": "indie",
+      "type": "github",
+      "since_hours": 336,
+      "max": 2,
+      "query": "topic:game created:>{since} stars:>15"
+    },
+    {
+      "name": "GitHub Roguelike/RPG",
+      "rubric": "indie",
+      "type": "github",
+      "since_hours": 720,
+      "max": 2,
+      "query": "topic:roguelike created:>{since} stars:>5"
+    },
+    {
+      "name": "GitHub Indie",
+      "rubric": "indie",
+      "type": "github",
+      "since_hours": 720,
+      "max": 2,
+      "query": "topic:indie-game created:>{since} stars:>5"
+    }
   ]
 }
