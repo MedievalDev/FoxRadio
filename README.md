@@ -1,92 +1,87 @@
 # FoxRadio
 
-Android-App, die zu festen Uhrzeiten Audio-Blöcke über die gerade laufende Musik legt
-(YouTube Music, Spotify, Radio-App, egal). Die Musik wird ausgeblendet oder leiser
-gemacht, der Block läuft, danach geht die Musik weiter. Gesamtkonzept: `docs/PLAN.md`.
+Persönliches Radioprogramm, das sich über die laufende Musik auf dem Handy legt.
+Nachts produziert der PC aus festen Feeds Dialog-Blöcke mit zwei Qwen3-TTS-Stimmen
+(ComfyUI), lädt sie auf den Webspace, die Android-App holt sie morgens und spielt
+sie zur vollen Stunde über YouTube Music, Spotify oder eine Radio-App. Die
+Meldungen gibt es in der App auch zum Nachlesen mit Bild und zum Nachhören.
 
-Stand: Phase 1, Testträger. Spielt einen festen Testblock (Jingle plus Uhrzeitansage
-per Android-Sprachausgabe). Playlist-Download und echte Inhalte kommen später.
+Gesamtkonzept und Entscheidungen: `docs/PLAN.md`. Was noch am PC zu tun ist:
+`docs/HANDOFF.md`.
 
-## APK holen
+## Teile
 
-Jeder Push baut per GitHub Actions eine Debug-APK und hängt sie an ein Release.
-Pro Branch gibt es ein Release mit Tag `apk-<branch>`, das bei jedem Build ersetzt wird.
+| Ordner | Was | Läuft wo |
+|---|---|---|
+| `app/` | Android-App (Kotlin, Material 3) | Handy |
+| `pc/` | Nachtlauf: Feeds, Texte, Stimmen, Schnitt, Upload | PC mit ComfyUI |
+| `docs/` | Plan und Übergabe | |
+| `.github/workflows/` | Baut die APK bei jedem Push | GitHub Actions |
 
-1. Am Handy die Releases-Seite des Repos öffnen und die APK laden.
-2. Installation aus unbekannten Quellen für den Browser erlauben, wenn gefragt.
-3. Updates einfach drüber installieren. Alle Builds sind mit demselben Debug-Keystore
-   signiert (`app/debug.keystore`), Deinstallieren ist nicht nötig.
+## App
 
-Android Studio wird nicht gebraucht. Lokal bauen geht mit `./gradlew assembleDebug`,
-wenn Android SDK und JDK 17 vorhanden sind.
+Jeder Push baut eine Debug-APK und hängt sie an das Release `apk-<branch>`
+(wird ersetzt). Am Handy von der Releases-Seite laden und drüber installieren,
+alle Builds haben denselben Debug-Schlüssel. Die Versionsnummer unten in der
+App ist die Build-Nummer.
 
-## Einrichtung auf Xiaomi (Mi 10T Lite 5G)
+Was die App macht:
+- **Sendeplan** 07:00 bis 16:00 zur vollen Stunde, Mo bis Fr (umschaltbar).
+  Spielt den vorgeladenen Block des Slots. Fehlt er oder läuft keine Musik,
+  bleibt es still, mit Eintrag im Protokoll.
+- **Zwei Modi**: Fadeout plus Pause (Medienlautstärke stufenweise runter, Audio
+  Focus, Block, wieder einblenden) oder Ducking.
+- **Sync** täglich 06:45 und per Button: `playlist.json`, `articles.json`,
+  `status.json`, Blöcke und Bilder vom Webspace in den App-Speicher.
+- **Heute**: Stand des Nachtlaufs, Artikelliste mit Bild, Rubrik, Teaser,
+  Artikelseite mit Text, Quelle und Nachhören des passenden Abschnitts.
+- **Test**: Testblock sofort (Jingle plus Uhrzeit per Android-Sprachausgabe)
+  und Test in 2 Minuten für den Hintergrundfall.
 
-MIUI und HyperOS beenden Hintergrund-Apps aggressiv. Ohne diese Schritte kommen
-die Blöcke nicht zuverlässig:
+Einrichtung auf Xiaomi (Mi 10T Lite 5G): In der App unter Berechtigungen alle
+Punkte auf grün bringen (exakte Wecker, Akku-Optimierung, Benachrichtigungen),
+dazu Xiaomi Autostart einschalten. Unter Verbindung Adresse, Benutzer und
+Passwort des geschützten Webspace-Ordners eintragen, dann "Jetzt laden".
 
-1. App öffnen. Unter "Berechtigungen" muss alles auf "erteilt" stehen.
-   Die Buttons öffnen jeweils die passende Systemseite.
-2. Autostart: Button "Xiaomi Autostart öffnen", FoxRadio einschalten.
-   Alternativ: Sicherheit, Berechtigungen, Autostart.
-3. Akku: Einstellungen, Apps, Apps verwalten, FoxRadio, Akkusparmodus,
-   "Keine Einschränkungen".
-4. Exakte Wecker: Falls "fehlt", Button "Exakte Wecker freigeben".
+## PC: Nachtlauf
 
-## Testablauf (Phase 1)
-
-1. YouTube Music oder eine Radio-App starten, Musik läuft.
-2. FoxRadio öffnen, "Testblock jetzt abspielen". Erwartung im Modus
-   "Fadeout + Pause": Musik blendet in etwa 1,5 Sekunden aus und pausiert,
-   Jingle und Ansage laufen, Musik setzt wieder ein und blendet in 2 Sekunden auf.
-3. Modus auf "Nur leiser" stellen und wiederholen. Erwartung: Musik läuft leise
-   weiter, Block liegt drüber.
-4. "Test in 2 Minuten": Handy sperren, Musik laufen lassen. Prüft den Weg über
-   den Wecker aus dem Hintergrund. Das ist der Fall, der auf Xiaomi scheitern kann.
-5. Sendeplan aktivieren. Blöcke kommen 07:00 bis 16:00 zur vollen Stunde,
-   standardmäßig nur Montag bis Freitag.
-6. Das Protokoll unten in der App zeigt, was passiert ist: Wecker ausgelöst,
-   Audio Focus erhalten, Fehler.
-
-## PC-Seite: Stimmen rendern (Phase 2)
-
-`pc/foxtts.py` rendert Dialogzeilen über die ComfyUI-API mit Qwen3-TTS und
-schneidet sie zu einem Block. Läuft mit der eingebetteten Python von ComfyUI,
-weil dort PyAV und numpy schon dabei sind:
+Alles in `pc/`, nur Standardbibliothek plus PyAV und numpy, die in der
+eingebetteten Python von ComfyUI schon drin sind:
 
 ```
-cd FoxRadio
-copy pc\foxtts.example.json pc\foxtts.json
-C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe pc\foxtts.py status
+set PY=C:\Users\marco\Desktop\ComfyUI_windows_portable\python_embeded\python.exe
+%PY% pc\feeds.py check                       Quellen prüfen
+%PY% pc\feeds.py weather                     Wetter Ellwangen
+%PY% pc\foxtts.py probe pc\voices\a.json     Workflow prüfen
+%PY% pc\foxtts.py block pc\scripts\testdialog.txt -o pc\work\test.mp3
+%PY% pc\night.py run --backend fake --no-upload --no-shutdown     Probelauf
+%PY% pc\night.py run                         echter Lauf
 ```
 
-Einrichtung:
-1. In ComfyUI den Dev-Modus einschalten (Einstellungen), pro Stimme einen
-   Workflow bauen: Qwen3-TTS-Knoten (Voice Design oder Voice Clone) plus
-   SaveAudio. Über "Save (API Format)" als `pc/voices/a.json` und
-   `pc/voices/b.json` speichern.
-2. `python pc\foxtts.py probe pc\voices\a.json` zeigt die Knoten und welcher
-   Text-Eingang ersetzt wird. Erkennt er den falschen, in `foxtts.json` bei
-   der Stimme `text_node` und `text_input` setzen.
-3. `python pc\foxtts.py block pc\scripts\testdialog.txt -o work\test.mp3`
-   rendert den Testdialog. Daneben entsteht `test.json` mit Renderzeit pro
-   Zeile und dem Echtzeitfaktor, das ist die Messung für die Modellwahl.
+| Datei | Aufgabe |
+|---|---|
+| `feeds.py`, `feeds.json` | RSS/Atom-Quellen, Anthropic-News, og:image, Wetter über Open-Meteo |
+| `writer.py`, `writer.example.json` | Meldungen auf Sendeplätze verteilen, Dialogskripte mit fester Rubrikenstruktur. Backend `claude-cli` (Claude Code headless), `api` (Anthropic-SDK) oder `fake` |
+| `foxtts.py`, `foxtts.example.json` | ComfyUI-API: pro Zeile rendern, FLAC dekodieren, mit Pausen schneiden, MP3 |
+| `night.py`, `night.example.json`, `night.bat` | Orchestrierung, Artikel-Audio-Offsets, Bilder, `playlist.json`, `articles.json`, `status.json`, Upload per FTP oder Ordner, ntfy bei Fehlern, optional Shutdown |
+| `scripts/testdialog.txt` | Testdialog für den Stimmenvergleich |
+| `voices/` | Workflows pro Stimme (API-Format aus ComfyUI), nicht im Repo |
 
-Das Skript startet ComfyUI über `run_nvidia_gpu.bat`, wenn die API nicht
-antwortet. Skriptformat: `A: Text`, `B: Text`, Leerzeile ist eine längere
-Pause, `#` ist Kommentar.
+Die `*.example.json` als `*.json` kopieren und ausfüllen. `night.bat` in die
+Windows-Aufgabenplanung um 05:00 eintragen, mit "Computer aufwecken".
 
-## Projekt
+Dateiformat auf dem Webspace (Ordner mit .htaccess):
 
-- `app/src/main/java/de/alchemyfox/foxradio/`
-  - `AudioEngine` Fade über die Medienlautstärke, Audio Focus, Jingle, Ansage
-  - `PlaybackService` Foreground Service, spielt genau einen Block
-  - `Scheduler` Sendeschema und AlarmManager
-  - `AlarmReceiver`, `BootReceiver` Wecker und Neuplanung nach Neustart
-  - `TtsSpeaker` Android-Sprachausgabe
-  - `MainActivity` Test-Buttons, Modus, Sendeplan, Berechtigungen, Protokoll
-- Build: Gradle 8.14.5, Android Gradle Plugin 8.13.2, Kotlin 2.3.21,
-  compileSdk 35, minSdk 26.
-- `pc/foxtts.py` ComfyUI-Client, Schnitt, MP3. `pc/scripts/` Dialog-Skripte,
-  `pc/voices/` Workflows pro Stimme (nicht im Repo bis sie stehen)
-- CI: `.github/workflows/android.yml`
+```
+playlist.json            {date, blocks:[{slot,file,kind,duration_s,title}]}
+articles.json            {date, articles:[{id,slot,rubric,title,teaser,body,source_name,source_url,image,audio_file,audio_start_s,audio_end_s}]}
+status.json              {ok,date,generated_at,message,blocks}
+2026-09-08/0700.mp3      Blöcke des Tages
+2026-09-08/img/*.jpg     Artikelbilder
+```
+
+## Build
+
+Gradle 8.14.5, Android Gradle Plugin 8.13.2, Kotlin 2.3.21, Material 1.14.0,
+compileSdk 35, minSdk 26. Lokal: `./gradlew assembleDebug` mit Android SDK
+und JDK 17. CI: `.github/workflows/android.yml`.

@@ -4,12 +4,10 @@ Persönliches Audio-Programm, das sich über beliebig laufende Musik legt.
 Morning Show mit zwei Stimmen, danach stündliche Blöcke. Sendezeit 07:00–16:00
 während der Arbeit.
 
-Stand: 2026-09-05 — Phase 1 bestanden: Die Android-App legt den Testblock
-über YouTube Music, auch bei gesperrtem Handy aus dem Hintergrund (Mi 10T
-Lite 5G). Entscheidungen vom 2026-09-05 sind in Abschnitt 7 eingetragen.
-Phase 2 vorbereitet: Render-Skript `pc/foxtts.py` steht und ist gegen einen
-Mock-Server getestet. Offen ist der Teil am PC: Workflows in ComfyUI bauen,
-Stimmen anhören, Renderzeit messen.
+Stand: 2026-09-05 — Alles, was ohne PC geht, ist gebaut: App mit Overlay,
+Sendeplan, Sync, Artikelansicht; PC-Pipeline mit Feeds, Wetter, Texten,
+Rendern, Schnitt, Upload und Status, gegen Mock-ComfyUI getestet. Offen sind
+die Schritte am PC, Webspace und Handy, siehe `HANDOFF.md`.
 
 ---
 
@@ -206,13 +204,13 @@ der Rest. Offene Entscheidung. Die Uhrzeit spricht die App schon jetzt live
 
 Jede Phase für sich testbar. Nicht weitergehen, bevor die vorige läuft.
 
-**Phase 1 — Beweis, dass Overlay funktioniert** (in Arbeit)
+**Phase 1 — Beweis, dass Overlay funktioniert** (bestanden 2026-09-05)
 Android-App mit Test-Button, Test-Wecker und festem Sendeplan. Spielt einen
 Jingle plus Uhrzeitansage über laufende Musik, beide Unterbrechungsmodi.
 Ziel: YouTube Music blendet sauber aus und kommt wieder hoch, auch bei
 gesperrtem Handy aus dem Hintergrund.
 
-**Phase 2 — Stimmen**
+**Phase 2 — Stimmen** (Skript fertig, Stimmen offen)
 In ComfyUI einen Workflow für eine einzelne Sprecherzeile bauen und als
 API-JSON exportieren. Skript, das den Workflow per API aufruft und die WAV
 abholt. Zwei deutsche Stimmen erzeugen (Voice Clone oder Voice Design),
@@ -220,18 +218,18 @@ denselben Testdialog rendern und anhören. Renderzeit pro Zeile messen.
 Ziel: Zwei Stimmen, die du neun Stunden lang erträgst, und ein Skript, das
 eine Textzeile in eine WAV verwandelt.
 
-**Phase 3 — Ein Block von Hand**
+**Phase 3 — Ein Block von Hand** (offen, siehe HANDOFF)
 Einen Stundenblock komplett durchziehen: Text schreiben, rendern,
 zusammenschneiden, hochladen, auf dem Handy abspielen.
 Ziel: Die ganze Kette einmal manuell durchlaufen.
 
-**Phase 4 — Automatisierung**
+**Phase 4 — Automatisierung** (Code fertig, Einrichtung offen)
 Routine-Session auf dem PC: ComfyUI per `run_nvidia_gpu.bat` starten, Feeds
 holen, Texte mit festen Rubriken generieren, alle Zeilen über die ComfyUI-API
 rendern, Schnitt, Upload, ComfyUI beenden, PC herunterfahren.
 Ziel: Ein Tag läuft ohne Handgriff.
 
-**Phase 5 — App ausbauen**
+**Phase 5 — App ausbauen** (gebaut, Test mit echten Daten offen)
 Playlist von alchemy-fox.de ziehen, Blöcke morgens vorladen, pro Slot die
 passende Datei statt des Testblocks, Fallback wenn nichts Neues da ist.
 Dazu die Artikelansicht: Die Nachtproduktion legt neben den Audio-Blöcken
@@ -244,9 +242,9 @@ kein eigenes Rendern. Jeder Artikel hat einen Play-Button zum Nachhören:
 das Render-Skript beim Schneiden aus den Zeilenlängen berechnet. Die App
 spielt dann genau diesen Abschnitt, ohne Overlay-Logik, einfach in der App.
 
-**Phase 6 — Feinschliff**
-Morning Show ausbauen, Monitoring (Nachricht aufs Handy wenn der Nachtlauf
-scheitert), Rubriken nachjustieren.
+**Phase 6 — Feinschliff** (Monitoring gebaut: status.json in der App, ntfy optional)
+Morning Show ausbauen, Rubriken nachjustieren, Feeds nach ein paar Tagen
+Hören anpassen.
 
 ---
 
