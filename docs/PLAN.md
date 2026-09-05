@@ -4,8 +4,10 @@ Persönliches Audio-Programm, das sich über beliebig laufende Musik legt.
 Morning Show mit zwei Stimmen, danach stündliche Blöcke. Sendezeit 07:00–16:00
 während der Arbeit.
 
-Stand: 2026-09-05 — Phase 1 in Umsetzung als Android-App (siehe README).
-Entscheidungen vom 2026-09-05 sind in Abschnitt 7 eingetragen.
+Stand: 2026-09-05 — Phase 1 bestanden: Die Android-App legt den Testblock
+über YouTube Music, auch bei gesperrtem Handy aus dem Hintergrund (Mi 10T
+Lite 5G). Entscheidungen vom 2026-09-05 sind in Abschnitt 7 eingetragen.
+Nächster Schritt: Phase 2, Stimmen in ComfyUI.
 
 ---
 
@@ -41,7 +43,8 @@ keine Kontrolle über die fremde App hast.
 **PC zuhause** — läuft nachts, per SwitchBot geweckt:
 1. Feeds abrufen und filtern
 2. Dialog-Skripte für alle Blöcke generieren (Claude Code headless)
-3. Jede Sprecherzeile einzeln mit Qwen3-TTS rendern
+3. Jede Sprecherzeile einzeln mit Qwen3-TTS rendern (läuft in ComfyUI,
+   siehe Abschnitt 5)
 4. Zeilen pro Block zu einer Datei zusammenschneiden
 5. Upload auf den Webspace, plus Playlist-Datei
 6. Herunterfahren
@@ -122,6 +125,17 @@ Rollen sollten klar getrennt sein, sonst klingen beide gleich:
 Qwen3-TTS kann Tonfall, Tempo und Emotion per Anweisung steuern. Damit spricht
 derselbe Sprecher den News-Teil nüchtern und den Gaming-Teil aufgeräumter.
 
+**Wo es läuft:** Qwen3-TTS ist als ComfyUI-Nodes installiert.
+- ComfyUI Portable: `C:\Users\marco\Desktop\ComfyUI_windows_portable`
+- Start: `run_nvidia_gpu.bat` in diesem Ordner
+- API: `http://127.0.0.1:8188/`
+- Die nächtliche Routine-Session startet die BAT, wartet bis die API
+  antwortet, schickt pro Sprecherzeile einen Workflow (`POST /prompt`),
+  wartet über `/history` auf das Ergebnis und holt die WAV ab.
+- Welche Qwen3-TTS-Nodes installiert sind und welche Eingänge sie haben
+  (Text, Referenzaudio, Stil-Anweisung): in Phase 2 im laufenden ComfyUI
+  nachsehen. Ungeprüft.
+
 **Produktionsmenge:** Zwei Stimmen im Dialog heißt, jede Zeile wird einzeln
 gerendert und danach zusammengeschnitten. Eine Morning Show sind 30–50
 Wortwechsel, die Stundenblöcke je 8–15. Macht **150–300 Einzeldateien pro
@@ -190,9 +204,12 @@ Ziel: YouTube Music blendet sauber aus und kommt wieder hoch, auch bei
 gesperrtem Handy aus dem Hintergrund.
 
 **Phase 2 — Stimmen**
-Qwen3-TTS lokal aufsetzen, zwei deutsche Stimmen erzeugen, denselben Testdialog
-rendern und anhören. Renderzeit messen.
-Ziel: Zwei Stimmen, die du neun Stunden lang erträgst.
+In ComfyUI einen Workflow für eine einzelne Sprecherzeile bauen und als
+API-JSON exportieren. Skript, das den Workflow per API aufruft und die WAV
+abholt. Zwei deutsche Stimmen erzeugen (Voice Clone oder Voice Design),
+denselben Testdialog rendern und anhören. Renderzeit pro Zeile messen.
+Ziel: Zwei Stimmen, die du neun Stunden lang erträgst, und ein Skript, das
+eine Textzeile in eine WAV verwandelt.
 
 **Phase 3 — Ein Block von Hand**
 Einen Stundenblock komplett durchziehen: Text schreiben, rendern,
@@ -200,8 +217,9 @@ zusammenschneiden, hochladen, auf dem Handy abspielen.
 Ziel: Die ganze Kette einmal manuell durchlaufen.
 
 **Phase 4 — Automatisierung**
-Feeds, Textgenerierung mit festen Rubriken, Batch-Rendering, Schnitt, Upload,
-Autostart auf dem PC.
+Routine-Session auf dem PC: ComfyUI per `run_nvidia_gpu.bat` starten, Feeds
+holen, Texte mit festen Rubriken generieren, alle Zeilen über die ComfyUI-API
+rendern, Schnitt, Upload, ComfyUI beenden, PC herunterfahren.
 Ziel: Ein Tag läuft ohne Handgriff.
 
 **Phase 5 — App ausbauen**
@@ -222,7 +240,8 @@ scheitert), Rubriken nachjustieren.
 | Dialog klingt künstlich | Nervt nach drei Tagen | Enge Prompts, feste Rubriken, früh testen |
 | Renderzeit zu lang | Nachtlauf wird nicht fertig | 0.6B statt 1.7B, weniger Wortwechsel |
 | Rate-Limit erreicht | Keine Texte | Lokales Fallback-Modell |
-| Audio Focus greift nicht | Overlay funktioniert nicht | Phase 1 klärt das, bevor Aufwand entsteht |
+| Audio Focus greift nicht | Overlay funktioniert nicht | Phase 1 bestanden, erledigt |
+| ComfyUI startet nicht oder Node-Update bricht Workflow | Keine Stimmen | Routine prüft API-Antwort, sonst Abbruch mit Meldung aufs Handy |
 | MIUI killt die App | Wecker feuern nicht | Autostart, Akku ohne Einschränkung, notfalls `setAlarmClock` oder dauerhafter Foreground Service |
 | anthropic.com ändert Layout | Rubrik fällt aus | Block überspringen statt leer senden |
 
