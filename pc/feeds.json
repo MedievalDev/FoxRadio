@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Geprüft am PC 2026-09-05 mit 'feeds.py check'. itch.io, RPG Codex und RPGWatch liefern 403 (auch mit Browser-UA), Kickstarter-Feeds ignorieren die Kategorie (Bücher statt Spiele), GameStar-Pfad war falsch. Reddit erlaubt nur eine Anfrage, deshalb ein Multi-Feed. 'max' deckelt laute Quellen, 'since_hours' lässt langsame weiter zurückschauen.",
+  "_hinweis": "Geprüft am PC 2026-09-05 mit 'feeds.py check'. itch.io, RPG Codex und RPGWatch liefern 403 (auch mit Browser-UA), Kickstarter-Feeds ignorieren die Kategorie (Bücher statt Spiele), GameStar-Pfad war falsch. Reddit erlaubt nur eine Anfrage, deshalb ein Multi-Feed. 'max' deckelt laute Quellen, 'since_hours' lässt langsame weiter zurückschauen. 'skip' ist ein Regex auf den Titel und sortiert Kolumnen, Anzeigen und Paywall-Stuecke aus.",
   "since_hours": 26,
   "max_per_rubric": 10,
   "weather": {
@@ -11,22 +11,26 @@
     {
       "name": "GameStar",
       "rubric": "gaming",
-      "url": "https://www.gamestar.de/news/rss/news.rss"
+      "url": "https://www.gamestar.de/news/rss/news.rss",
+      "skip": "^Plus - |Podcast"
     },
     {
       "name": "PC Gamer",
       "rubric": "gaming",
-      "url": "https://www.pcgamer.com/rss/"
+      "url": "https://www.pcgamer.com/rss/",
+      "skip": "'s schedule of new games"
     },
     {
       "name": "Rock Paper Shotgun",
       "rubric": "gaming",
-      "url": "https://www.rockpapershotgun.com/feed"
+      "url": "https://www.rockpapershotgun.com/feed",
+      "skip": "^What are we all playing"
     },
     {
       "name": "Eurogamer",
       "rubric": "gaming",
-      "url": "https://www.eurogamer.net/feed"
+      "url": "https://www.eurogamer.net/feed",
+      "skip": "^What we've been playing"
     },
     {
       "name": "heise Developer",
@@ -34,9 +38,11 @@
       "url": "https://www.heise.de/developer/rss/news-atom.xml"
     },
     {
-      "name": "Golem",
+      "name": "Golem Entwicklung",
       "rubric": "dev",
-      "url": "https://rss.golem.de/rss.php?feed=RSS2.0"
+      "url": "https://rss.golem.de/rss.php?tp=dev&feed=RSS2.0",
+      "skip": "^\\(g\\+\\)|^Anzeige:",
+      "since_hours": 48
     },
     {
       "name": "Game Developer",
@@ -46,7 +52,8 @@
     {
       "name": "Hacker News Top",
       "rubric": "dev",
-      "url": "https://hnrss.org/frontpage?points=150"
+      "url": "https://hnrss.org/frontpage?points=150",
+      "skip": "U\\.S\\.|Government|election|Congress|Senate|President|Trump"
     },
     {
       "name": "Anthropic News",
@@ -85,7 +92,8 @@
       "name": "Reddit Indie (Top des Tages)",
       "rubric": "indie",
       "max": 3,
-      "url": "https://www.reddit.com/r/IndieGaming+indiegames+rpg_gamers+roguelikes/top/.rss?t=day"
+      "url": "https://www.reddit.com/r/IndieGaming+indiegames+rpg_gamers+roguelikes/top/.rss?t=day",
+      "skip": "FOR HIRE|feedback|wishlist|Steam page|artwork"
     },
     {
       "name": "GitHub neue Spiele",

@@ -268,6 +268,13 @@ def collect(cfg, since=None, with_images=True):
             log(f"FEHLER {src['name']}: {e}")
             continue
         fresh = [i for i in items if i["published"] is None or i["published"] >= src_since]
+        # Kolumnen, Anzeigen, Paywall: "skip" ist ein Regex auf den Titel
+        if src.get("skip"):
+            muster = re.compile(src["skip"], re.I)
+            weg = [i for i in fresh if muster.search(i["title"])]
+            fresh = [i for i in fresh if not muster.search(i["title"])]
+            if weg:
+                log(f"{src['name']}: {len(weg)} uebersprungen ({weg[0]['title'][:50]}...)")
         # laute Quellen deckeln, neueste zuerst
         if src.get("max"):
             fresh.sort(key=lambda i: i["published"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
