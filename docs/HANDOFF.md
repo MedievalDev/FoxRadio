@@ -67,8 +67,11 @@ braucht `pip install anthropic` in der ComfyUI-Python und `ANTHROPIC_API_KEY`.
 Auf alchemy-fox.de einen Ordner `foxradio` anlegen, mit `.htaccess` und
 `.htpasswd` schützen (Basic Auth). Vorlage in `pc/webspace/htaccess.example`,
 Passwortdatei mit `pc/webspace/make_htpasswd.py` oder über den
-Verzeichnisschutz im Hosting-Panel. FTP-Zugang in `pc\night.json` eintragen
-(`night.example.json` als Vorlage, `remote_dir` ist dieser Ordner). Test:
+Verzeichnisschutz im Hosting-Panel. Upload: Strato nimmt weder FTP noch FTPS,
+nur SSH. In `pc\night.json` daher `method: sftp` mit SSH-Zugang (paramiko,
+Commit 4e3578c), Vorlage `night.example.json`, `remote_dir` ist der Ordner.
+Der Basic-Auth-Zugang der App steht als `web_user` und `web_password` mit in
+`night.json`. Test:
 
 ```
 %PY% pc\night.py upload-status "Test"
