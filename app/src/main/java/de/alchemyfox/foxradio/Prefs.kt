@@ -55,6 +55,15 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_PASS, "") ?: ""
         set(value) = sp.edit().putString(KEY_PASS, value).apply()
 
+    /** Simulation: Startzeit (0 = aus), Index des naechsten Blocks, Tag der Playlist. */
+    var simStart: Long
+        get() = sp.getLong(KEY_SIM_START, 0L)
+        set(value) = sp.edit().putLong(KEY_SIM_START, value).apply()
+
+    var simIndex: Int
+        get() = sp.getInt(KEY_SIM_INDEX, 0)
+        set(value) = sp.edit().putInt(KEY_SIM_INDEX, value).apply()
+
     var lastSync: String
         get() = sp.getString(KEY_LAST_SYNC, "") ?: ""
         set(value) = sp.edit().putString(KEY_LAST_SYNC, value).apply()
@@ -82,6 +91,8 @@ class Prefs(context: Context) {
         private const val KEY_USER = "auth_user"
         private const val KEY_PASS = "auth_pass"
         private const val KEY_LAST_SYNC = "last_sync"
+        private const val KEY_SIM_START = "sim_start"
+        private const val KEY_SIM_INDEX = "sim_index"
         private const val KEY_LOG = "log"
         private const val MAX_LOG_LINES = 40
         private val LOG_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM. HH:mm:ss")

@@ -143,6 +143,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.btnPlayBlockNow).setOnClickListener { playTodayBlockNow() }
+        findViewById<View>(R.id.btnSimulation).setOnClickListener {
+            if (Simulation.isActive(prefs)) {
+                Simulation.stop(this, "manuell beendet")
+            } else if (Simulation.start(this) == null) {
+                Toast.makeText(this, R.string.toast_no_block, Toast.LENGTH_LONG).show()
+            }
+            refresh()
+        }
 
         val editUrl = findViewById<EditText>(R.id.editUrl)
         val editUser = findViewById<EditText>(R.id.editUser)
@@ -240,6 +248,17 @@ class MainActivity : AppCompatActivity() {
     private fun refreshToday() {
         val lib = Library(this)
         val playlist = lib.playlist()
+        val simButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSimulation)
+        val simStatus = findViewById<TextView>(R.id.simStatus)
+        val simNext = Simulation.nextTime(this)
+        if (simNext != null && playlist != null) {
+            simButton.setText(R.string.btn_simulation_stop)
+            simStatus.text = getString(R.string.sim_status, prefs.simIndex + 1, playlist.second.size, simNext.format(Schedule.FMT))
+            simStatus.visibility = View.VISIBLE
+        } else {
+            simButton.setText(R.string.btn_simulation_start)
+            simStatus.visibility = View.GONE
+        }
         val articles = lib.articles()?.second ?: emptyList()
         if (playlist == null) {
             todayText.setText(R.string.today_none)

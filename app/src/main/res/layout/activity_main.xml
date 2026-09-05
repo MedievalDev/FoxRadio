@@ -200,6 +200,24 @@
                     android:text="@string/btn_play_block_now"
                     app:icon="@drawable/ic_play"
                     app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSimulation"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_simulation_start"
+                    app:icon="@drawable/ic_timer"
+                    app:iconGravity="textStart" />
+
+                <TextView
+                    android:id="@+id/simStatus"
+                    style="@style/Text.Hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

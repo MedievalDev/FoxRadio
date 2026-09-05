@@ -14,6 +14,10 @@ class AlarmReceiver : BroadcastReceiver() {
         val prefs = Prefs(context)
         prefs.appendLog("Wecker ausgelöst ($source)")
 
+        if (source == Scheduler.SOURCE_SIM) {
+            Simulation.onAlarm(context)
+            return
+        }
         if (source == Scheduler.SOURCE_SYNC) {
             Scheduler.sync(context)
             SyncService.start(context)
@@ -29,6 +33,11 @@ class AlarmReceiver : BroadcastReceiver() {
             return
         }
         Scheduler.sync(context)?.let { prefs.appendLog("Nächster Block: ${it.format(Schedule.FMT)}") }
+
+        if (Simulation.isActive(prefs)) {
+            prefs.appendLog("Simulation läuft, regulärer Block übersprungen")
+            return
+        }
 
         val file = blockForNow(context) ?: return
 
