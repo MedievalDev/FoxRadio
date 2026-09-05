@@ -652,9 +652,25 @@ def music_bed(cfg, sr, n, files):
     f = random.choice(files)
     track = decode_audio(f, sr).astype(np.float32) / 32767.0
     if len(track) < n:
-        track = np.tile(track, int(np.ceil(n / len(track))))
-    start = random.randint(0, len(track) - n)
+        # Kreuzblende an der Nahtstelle, sonst hoert man bei jeder Wiederholung
+        # den Schnitt. Zwei Sekunden reichen bei einem laufenden Musikbett.
+        blende = min(int(2.0 * sr), len(track) // 4)
+        if blende > 0:
+            rampe = np.linspace(0.0, 1.0, blende, dtype=np.float32)
+            kopf, rest = track[:blende], track[blende:]
+            stueck = np.concatenate([rest, np.zeros(0, dtype=np.float32)])
+            teile = [track[:len(track) - blende]]
+            while sum(len(t) for t in teile) < n + blende:
+                naht = teile[-1][-blende:] * rampe[::-1] + kopf * rampe
+                teile[-1] = teile[-1][:-blende]
+                teile += [naht, track[blende:len(track) - blende]]
+            track = np.concatenate(teile)
+        else:
+            track = np.tile(track, int(np.ceil(n / len(track))))
+    start = random.randint(0, max(0, len(track) - n))
     track = track[start:start + n].copy()
+    if len(track) < n:
+        track = np.pad(track, (0, n - len(track)))
     track *= 10 ** (m["gain_db"] / 20)
     fade = min(int(m["fade_s"] * sr), n // 2)
     if fade > 0:
