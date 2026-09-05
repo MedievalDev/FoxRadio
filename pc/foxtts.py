@@ -79,6 +79,14 @@ DEFAULTS = {
         "language": "German",
         "log": "",
     },
+    # Jingles: Zeilen "J: news" im Skript. Datei jingles/<name>.<mp3|wav|flac|ogg>,
+    # sonst wird der Marker uebersprungen. gain_db regelt sie gegen die Stimmen.
+    "jingles": {
+        "enabled": True,
+        "dir": os.path.join(HERE, "jingles"),
+        "gain_db": -3.0,
+        "pause_ms": 250,
+    },
     # Leises Musikbett unter jedem Block. Dateien (mp3/wav/flac/ogg) in
     # music/, eine wird je Block zufaellig gewaehlt. Ohne Dateien kein Bett.
     "music": {
@@ -103,7 +111,7 @@ def load_config():
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, encoding="utf-8") as f:
             eigen = json.load(f)
-        for key in ("direct", "music"):        # verschachtelte Teile ergaenzen, nicht ersetzen
+        for key in ("direct", "music", "jingles"):   # verschachtelte Teile ergaenzen, nicht ersetzen
             if isinstance(eigen.get(key), dict):
                 eigen[key] = {**DEFAULTS[key], **eigen[key]}
         cfg.update(eigen)
@@ -656,8 +664,20 @@ def music_bed(cfg, sr, n, files):
     return track, os.path.basename(f)
 
 
+def jingle_path(cfg, name):
+    j = cfg.get("jingles") or {}
+    if not j.get("enabled", True):
+        return None
+    d = resolve_path(j["dir"])
+    for ext in ("wav", "mp3", "flac", "ogg", "m4a"):
+        p = os.path.join(d, f"{name}.{ext}")
+        if os.path.exists(p):
+            return p
+    return None
+
+
 def parse_script(path):
-    """Liefert Liste von ("line", voice, text) oder ("pause",)."""
+    """Liefert Liste von ("line", voice, text), ("jingle", name) oder ("pause",)."""
     items = []
     with open(path, encoding="utf-8") as f:
         for raw in f:
@@ -671,7 +691,11 @@ def parse_script(path):
             if ":" not in line:
                 raise ValueError(f"Zeile ohne Sprecher: {line[:60]}")
             voice, text = line.split(":", 1)
-            items.append(("line", voice.strip(), text.strip()))
+            voice, text = voice.strip(), text.strip()
+            if voice == "J":
+                items.append(("jingle", text.lower()))
+            else:
+                items.append(("line", voice, text))
     while items and items[-1][0] == "pause":
         items.pop()
     return items
@@ -681,7 +705,8 @@ def render_block(cfg, script_path, out_path):
     import numpy as np
     items = parse_script(script_path)
     lines = [i for i in items if i[0] == "line"]
-    log(f"{len(lines)} Zeilen aus {script_path}")
+    jingles = [i for i in items if i[0] == "jingle"]
+    log(f"{len(lines)} Zeilen" + (f" und {len(jingles)} Jingles" if jingles else "") + f" aus {script_path}")
     api = ensure_running(cfg)
     work = os.path.join(cfg["work_dir"], os.path.splitext(os.path.basename(out_path))[0])
     os.makedirs(work, exist_ok=True)
@@ -694,16 +719,32 @@ def render_block(cfg, script_path, out_path):
     if bett:
         parts.append(silence(cfg["music"]["lead_s"] * 1000))    # Musik laeuft kurz an
     n = 0
+    jcfg = cfg.get("jingles") or {}
     for item in items:
         if item[0] == "pause":
             parts.append(silence(cfg["paragraph_pause_ms"]))
+            continue
+        if item[0] == "jingle":
+            p = jingle_path(cfg, item[1])
+            if not p:
+                log(f"Jingle '{item[1]}' fehlt in {resolve_path(jcfg.get('dir', 'jingles'))}, uebersprungen")
+                continue
+            klang = decode_audio(p, sr).astype(np.float32) * (10 ** (jcfg.get("gain_db", -3.0) / 20))
+            if parts:
+                parts.append(silence(jcfg.get("pause_ms", 250)))
+            start_s = sum(len(x) for x in parts) / sr
+            parts.append(klang.astype(np.int16))
+            stats.append({"n": None, "voice": "J", "jingle": item[1], "chars": 0, "render_s": 0.0,
+                          "audio_s": round(len(klang) / sr, 2), "start_s": round(start_s, 2),
+                          "end_s": round(start_s + len(klang) / sr, 2), "file": os.path.basename(p)})
+            parts.append(silence(jcfg.get("pause_ms", 250)))
             continue
         _, voice, text = item
         n += 1
         path, secs = render_line(api, cfg, voice, text, work)
         total += secs
         audio = decode_audio(path, sr)
-        if n > 1:                                  # Pause zwischen den Zeilen, nicht vor der ersten
+        if n > 1 and parts and len(parts[-1]) > int(sr * 0.02):   # Pause zwischen Zeilen, nicht nach einem Jingle
             parts.append(silence(cfg["pause_ms"]))
         start_s = sum(len(x) for x in parts) / sr
         parts.append(audio)

@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Als foxtts.json speichern. backend direct: Qwen3-TTS direkt aus dem ComfyUI-Ordner mit der isolierten Umgebung qwen_tts_env (der ComfyUI-Node rendert mit transformers 5.9 nicht). A_design/B_design erzeugen einmal die Referenzen (foxtts.py line -v A_design -t 'Text' -o voices/a_ref.wav), A und B klonen daraus, damit die Stimme ueber hunderte Zeilen gleich bleibt. Musik: Dateien in music/ ablegen, eine wird je Block zufaellig gewaehlt.",
+  "_hinweis": "Als foxtts.json speichern. backend direct: Qwen3-TTS direkt aus dem ComfyUI-Ordner mit der isolierten Umgebung qwen_tts_env (der ComfyUI-Node rendert mit transformers 5.9 nicht). A_design/B_design erzeugen einmal die Referenzen (foxtts.py line -v A_design -t 'Text' -o voices/a_ref.wav), A und B klonen daraus, damit die Stimme ueber hunderte Zeilen gleich bleibt. Musik: Dateien in music/ ablegen, eine wird je Block zufaellig gewaehlt. Jingles: Zeilen 'J: news' im Skript holen jingles/news.wav (auch mp3, flac, ogg); fehlt die Datei, wird der Marker uebersprungen. Namen: intro, news, wetter, dev, thema, tipp, rezept, outro.",
   "backend": "direct",
   "direct": {
     "python": "C:\\Users\\marco\\Desktop\\ComfyUI_windows_portable\\python_embeded\\python.exe",
@@ -10,17 +10,47 @@
   "start_timeout_s": 240,
   "render_timeout_s": 600,
   "voices": {
-    "A_design": { "mode": "design", "seed": 20260901, "instruct": "A native German speaker born and raised in Germany. Natural standard German pronunciation with no foreign accent whatsoever. Calm, clear adult male voice in his thirties, measured radio news anchor delivery, moderate pace, neutral and confident tone, precise articulation." },
-    "B_design": { "mode": "design", "seed": 20260808, "instruct": "A native German speaker born and raised in Germany. Natural standard German pronunciation with no foreign accent whatsoever. Warm, friendly adult female voice, clear articulation, moderate speaking pace, relaxed and a little playful." },
-    "A": { "mode": "clone", "model_size": "1.7B", "ref_audio": "voices/a_ref.wav", "ref_text": "Transkript der Referenz, exakt wie gesprochen" },
-    "B": { "mode": "clone", "model_size": "1.7B", "ref_audio": "voices/b_ref.wav", "ref_text": "Transkript der Referenz, exakt wie gesprochen" }
+    "A_design": {
+      "mode": "design",
+      "seed": 20260901,
+      "instruct": "A native German speaker born and raised in Germany. Natural standard German pronunciation with no foreign accent whatsoever. Calm, clear adult male voice in his thirties, measured radio news anchor delivery, moderate pace, neutral and confident tone, precise articulation."
+    },
+    "B_design": {
+      "mode": "design",
+      "seed": 20260808,
+      "instruct": "A native German speaker born and raised in Germany. Natural standard German pronunciation with no foreign accent whatsoever. Warm, friendly adult female voice, clear articulation, moderate speaking pace, relaxed and a little playful."
+    },
+    "A": {
+      "mode": "clone",
+      "model_size": "1.7B",
+      "ref_audio": "voices/a_ref.wav",
+      "ref_text": "Transkript der Referenz, exakt wie gesprochen"
+    },
+    "B": {
+      "mode": "clone",
+      "model_size": "1.7B",
+      "ref_audio": "voices/b_ref.wav",
+      "ref_text": "Transkript der Referenz, exakt wie gesprochen"
+    }
   },
   "pause_ms": 350,
   "paragraph_pause_ms": 800,
   "sample_rate": 24000,
   "mp3_bitrate": "96k",
-  "music": { "enabled": true, "dir": "music", "gain_db": -20.0, "fade_s": 2.0, "lead_s": 0.8, "tail_s": 1.5 },
-
+  "jingles": {
+    "enabled": true,
+    "dir": "jingles",
+    "gain_db": -3.0,
+    "pause_ms": 250
+  },
+  "music": {
+    "enabled": true,
+    "dir": "music",
+    "gain_db": -20.0,
+    "fade_s": 2.0,
+    "lead_s": 0.8,
+    "tail_s": 1.5
+  },
   "_comfy_backend": "Alternative: backend comfy mit exportierten Workflows je Stimme: voices: { \"A\": { \"workflow\": \"voices/a.json\" } }, dazu comfy_url und comfy_bat.",
   "comfy_url": "http://127.0.0.1:8188",
   "comfy_bat": "C:\\Users\\marco\\Desktop\\ComfyUI_windows_portable\\run_nvidia_gpu.bat"

@@ -234,13 +234,21 @@ def run(cfg, day, backend=None, upload=True, shutdown=None):
     except Exception as e:
         log(f"Wetter fehlgeschlagen, Blöcke ohne Wetter: {e}")
 
-    # 2. Texte
+    # 2. Tagesthema (sieben Teile bis 10 Uhr), dann die Bloecke
+    log("Tagesthema")
+    theme = None
+    try:
+        theme = writer.build_theme(wcfg, fres["items"], day, day_dir)
+    except Exception as e:
+        log(f"Kein Tagesthema heute: {e}")
     log("Texte")
-    blocks = writer.plan_blocks(fres["items"], wcfg["slots"])
+    blocks = writer.plan_blocks(wcfg, fres["items"], theme)
     metas = []
     for b in blocks:
+        if b["kind"] == "theme" and not theme:
+            continue                       # reine Themenbloecke entfallen ohne Thema
         try:
-            metas.append(writer.write_block(wcfg, b, weather, day, day_dir))
+            metas.append(writer.write_block(wcfg, b, weather, day, day_dir, theme))
         except Exception as e:
             log(f"Block {b['slot']} ohne Text: {e}")
     if not metas:
@@ -259,7 +267,8 @@ def run(cfg, day, backend=None, upload=True, shutdown=None):
             log(f"Block {m['slot']} nicht gerendert: {e}")
             continue
         playlist.append({"slot": m["slot"], "file": os.path.basename(out), "kind": m["kind"],
-                         "duration_s": summary["audio_s"], "title": f"{m['slot']} Block"})
+                         "duration_s": summary["audio_s"], "title": m.get("title") or f"{m['slot']} Block",
+                         "theme_part": m.get("theme_part")})
         per_line = summary["per_line"]
         for a in m["articles"]:
             s = per_line[a["line_start"]]["start_s"] if a["line_start"] < len(per_line) else 0

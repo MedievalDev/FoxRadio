@@ -1,7 +1,7 @@
 {
-  "_hinweis": "Geprüft am PC 2026-09-05 mit 'feeds.py check'. itch.io, RPG Codex und RPGWatch liefern 403 (auch mit Browser-UA), Kickstarter-Feeds ignorieren die Kategorie (Bücher statt Spiele), GameStar-Pfad war falsch. Reddit erlaubt nur eine Anfrage, deshalb ein Multi-Feed. 'max' deckelt laute Quellen, 'since_hours' lässt langsame weiter zurückschauen. 'skip' ist ein Regex auf den Titel und sortiert Kolumnen, Anzeigen und Paywall-Stuecke aus.",
+  "_hinweis": "Geprüft am PC 2026-09-05. Rubriken: gaming (Magazine mit Kolumnenfilter plus Steam-News der Reihen), gamedev (Spieleentwicklung), ki (Anthropic, lokale Modelle für Bild, Video, Audio, TTS), indie, mods. 'skip' Regex auf den Titel sortiert aus, 'only' lässt nur passende durch, 'max' deckelt, 'since_hours' lässt langsame Quellen weiter zurückschauen, 'delay_before_s' wartet vor der Anfrage. Tot (Stand 09/2026): itch.io, RPG Codex, RPGWatch, Nexus, Warhorse-Feed, Kickstarter, Unreal-Blog; Reddit erlaubt nur eine Anfrage je Minute.",
   "since_hours": 26,
-  "max_per_rubric": 10,
+  "max_per_rubric": 12,
   "weather": {
     "place": "Ellwangen",
     "latitude": 48.9614,
@@ -11,70 +11,162 @@
     {
       "name": "GameStar",
       "rubric": "gaming",
+      "max": 4,
       "url": "https://www.gamestar.de/news/rss/news.rss",
-      "skip": "^Plus - |Podcast"
+      "skip": "^Plus - |Podcast|\\bFilm\\b|\\bSerie\\b|Kino|Netflix"
     },
     {
       "name": "PC Gamer",
       "rubric": "gaming",
+      "max": 4,
       "url": "https://www.pcgamer.com/rss/",
-      "skip": "'s schedule of new games"
+      "skip": "'s schedule of new games|deal|discount|Black Friday|Prime Day"
     },
     {
       "name": "Rock Paper Shotgun",
       "rubric": "gaming",
+      "max": 4,
       "url": "https://www.rockpapershotgun.com/feed",
-      "skip": "^What are we all playing"
+      "skip": "^What are we all playing|deal|discount"
     },
     {
       "name": "Eurogamer",
       "rubric": "gaming",
+      "max": 4,
       "url": "https://www.eurogamer.net/feed",
-      "skip": "^What we've been playing"
+      "skip": "^What we've been playing|deal|discount|TV|film|movie"
     },
     {
-      "name": "heise Developer",
-      "rubric": "dev",
-      "url": "https://www.heise.de/developer/rss/news-atom.xml"
+      "name": "Steam Kingdom Come 2",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/1771300/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
     },
     {
-      "name": "Golem Entwicklung",
-      "rubric": "dev",
-      "url": "https://rss.golem.de/rss.php?tp=dev&feed=RSS2.0",
-      "skip": "^\\(g\\+\\)|^Anzeige:",
-      "since_hours": 48
+      "name": "Steam Kingdom Come",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/379430/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Elden Ring",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/1245620/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Nightreign",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/2622380/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Enshrouded",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/1203620/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Wreckfest 2",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/1203190/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Skyrim",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/489830/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Witcher 3",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/292030/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "Steam Sons of the Forest",
+      "rubric": "gaming",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://store.steampowered.com/feeds/news/app/1326470/",
+      "skip": "Vinyl|Merch|Soundtrack|Sale\\b|Discount|Rabatt"
+    },
+    {
+      "name": "80.lv",
+      "rubric": "gamedev",
+      "max": 4,
+      "url": "https://80.lv/feed/"
     },
     {
       "name": "Game Developer",
-      "rubric": "dev",
-      "url": "https://www.gamedeveloper.com/rss.xml"
+      "rubric": "gamedev",
+      "max": 3,
+      "url": "https://www.gamedeveloper.com/rss.xml",
+      "skip": "layoff|lawsuit|earnings|Q[1-4] "
     },
     {
-      "name": "Hacker News Top",
-      "rubric": "dev",
-      "url": "https://hnrss.org/frontpage?points=150",
-      "skip": "U\\.S\\.|Government|election|Congress|Senate|President|Trump"
+      "name": "Godot",
+      "rubric": "gamedev",
+      "max": 2,
+      "since_hours": 168,
+      "url": "https://godotengine.org/rss.xml"
+    },
+    {
+      "name": "Blender",
+      "rubric": "gamedev",
+      "max": 2,
+      "since_hours": 168,
+      "url": "https://www.blender.org/feed/"
     },
     {
       "name": "Anthropic News",
-      "rubric": "anthropic",
+      "rubric": "ki",
       "type": "anthropic",
+      "max": 3,
+      "since_hours": 48,
       "url": "https://www.anthropic.com/news"
     },
     {
-      "name": "RPGamer",
-      "rubric": "indie",
-      "url": "https://rpgamer.com/feed/"
+      "name": "Hugging Face Blog",
+      "rubric": "ki",
+      "max": 3,
+      "since_hours": 72,
+      "url": "https://huggingface.co/blog/feed.xml",
+      "only": "TTS|speech|audio|music|video|image|diffusion|local|quantiz|GGUF|on-device|open"
     },
     {
-      "name": "Turn Based Lovers",
-      "rubric": "indie",
-      "url": "https://turnbasedlovers.com/feed/"
+      "name": "heise Developer",
+      "rubric": "ki",
+      "max": 2,
+      "url": "https://www.heise.de/developer/rss/news-atom.xml",
+      "only": "\\bKI\\b|\\bAI\\b|\\bLLM|Claude|Anthropic|GPT|OpenAI|Gemini|Qwen|DeepSeek|Mistral|Llama|Sprachmodell|Modell|Diffusion|ComfyUI|Stable Diffusion|Text-to-|Speech|TTS|Agent",
+      "skip": "Anzeige|webinar|Workshop"
     },
     {
-      "name": "Indie Games Plus",
-      "rubric": "indie",
-      "url": "https://indiegamesplus.com/feed"
+      "name": "Golem Entwicklung",
+      "rubric": "ki",
+      "max": 2,
+      "since_hours": 48,
+      "url": "https://rss.golem.de/rss.php?tp=dev&feed=RSS2.0",
+      "only": "\\bKI\\b|\\bAI\\b|\\bLLM|Claude|Anthropic|GPT|OpenAI|Gemini|Qwen|DeepSeek|Mistral|Llama|Sprachmodell|Modell|Diffusion|ComfyUI|Stable Diffusion|Text-to-|Speech|TTS|Agent",
+      "skip": "^\\(g\\+\\)|^Anzeige:"
     },
     {
       "name": "Alpha Beta Gamer",
@@ -89,11 +181,19 @@
       "url": "https://rss.indiedb.com/news/feed/rss.xml"
     },
     {
+      "name": "Indie Games Plus",
+      "rubric": "indie",
+      "max": 2,
+      "since_hours": 72,
+      "url": "https://indiegamesplus.com/feed"
+    },
+    {
       "name": "Reddit Indie (Top des Tages)",
       "rubric": "indie",
       "max": 3,
+      "delay_before_s": 5,
       "url": "https://www.reddit.com/r/IndieGaming+indiegames+rpg_gamers+roguelikes/top/.rss?t=day",
-      "skip": "FOR HIRE|feedback|wishlist|Steam page|artwork"
+      "skip": "FOR HIRE|feedback|wishlist|Steam page|artwork|capsule|trailer review|which one"
     },
     {
       "name": "GitHub neue Spiele",
@@ -118,6 +218,13 @@
       "since_hours": 720,
       "max": 2,
       "query": "topic:indie-game created:>{since} stars:>5"
+    },
+    {
+      "name": "ModDB News",
+      "rubric": "mods",
+      "max": 3,
+      "since_hours": 48,
+      "url": "https://rss.moddb.com/news/feed/rss.xml"
     }
   ]
 }

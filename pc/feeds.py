@@ -261,6 +261,8 @@ def collect(cfg, since=None, with_images=True):
     for src in cfg["sources"]:
         # Quellen mit wenig Durchsatz (GitHub, Foren) duerfen weiter zurueckschauen
         src_since = jetzt - timedelta(hours=src["since_hours"]) if src.get("since_hours") else since
+        if src.get("delay_before_s"):
+            time.sleep(src["delay_before_s"])      # Reddit und Co. moegen keine schnellen Folgeanfragen
         try:
             items = fetch_source(src, src_since)
         except Exception as e:
@@ -268,6 +270,10 @@ def collect(cfg, since=None, with_images=True):
             log(f"FEHLER {src['name']}: {e}")
             continue
         fresh = [i for i in items if i["published"] is None or i["published"] >= src_since]
+        # "only": nur Titel, die zum Muster passen (z. B. KI-Meldungen aus einem allgemeinen Feed)
+        if src.get("only"):
+            muster = re.compile(src["only"], re.I)
+            fresh = [i for i in fresh if muster.search(i["title"] + " " + (i.get("summary") or "")[:200])]
         # Kolumnen, Anzeigen, Paywall: "skip" ist ein Regex auf den Titel
         if src.get("skip"):
             muster = re.compile(src["skip"], re.I)
